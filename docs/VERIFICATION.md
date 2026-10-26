@@ -1,4 +1,4 @@
-# Verification for v1.0.1
+# Verification for v1.0.2
 
 [Overview](../README.md) - [Development](DEVELOPMENT.md)
 
@@ -6,9 +6,10 @@
 
 This is a built OpenOS Lua application, not a Java mod. Automated tests execute
 the real Lua model, API adapter, transaction engine and UI under Lua 5.2 and 5.3.
-Actual installed JAR bytecode is inspected separately. **A live Minecraft/OC
-launch exposed a v1.0.0 startup crash. v1.0.1 fixes that path, but has not yet
-been retested in-world.** Simulation is not a claim of in-world validation.
+Actual installed JAR bytecode is inspected separately. **Live Minecraft/OC
+launches exposed a v1.0.0 startup crash and a v1.0.1 demo-title rendering
+crash. v1.0.2 addresses both, but has not yet been retested in-world.**
+Simulation is not a claim of in-world validation.
 
 ## Automated checks
 
@@ -25,7 +26,8 @@ been retested in-world.** Simulation is not a claim of in-world validation.
   writes and completion boundaries, followed by Finish or Restore recovery.
 - Full mouse/keyboard application journeys at 50x16, 80x25 and 160x50: scan,
   select, type amounts, remove, pick/add, multiply/divide, preview, apply and quit.
-  Render calls are checked against screen bounds. Top-row/numpad keys,
+  Render calls are checked against screen bounds, including a 51-character
+  demo title at 50 columns without `unicode.wtrunc`. Top-row/numpad keys,
   Backspace/Delete, cursor movement, Ctrl+A, paste and UTF-8 text are exercised.
 - Journal persistence checks and release/installer checks described by the tests.
 - Built entry-point smoke tests for `--help`, normal Setup startup and `--demo`

@@ -16,7 +16,7 @@ function M.run(check,fails,memoryStore)
     return table.concat(out)
   end
   unicode.wlen=unicode.len
-  function unicode.wtrunc(s,n) return unicode.sub(s,1,n) end
+  function unicode.wtrunc() error('OpenOS unicode.wtrunc must not be used for clipping') end
   function unicode.char(n)
     if n<128 then return string.char(n) end
     return string.char(192+math.floor(n/64),128+n%64)
@@ -52,6 +52,8 @@ function M.run(check,fails,memoryStore)
   end
   local gpu=screen(50,16)
   local ui=require('ape.ui').new(gpu,{},keyboard,unicode)
+  ui.frame('AE2 Pattern Editor 1.0.2 [DEMO - no real AE access]')
+  check(unicode.len(gpu.dump():match('^[^\n]+'))==50,'Long title must fit a 50-column screen')
   local field={text='1234'}
   ui.frame('Input regression')
   ui.field(1,4,20,field)

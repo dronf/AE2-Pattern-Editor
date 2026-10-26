@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.2 - 2026-10-26
+
+Fix the OpenOS `Index 51 out of bounds for length 51` crash when drawing the
+demo title on a 50-column screen. Clip text by measured display width without
+calling `unicode.wtrunc`; keep substring indices within the string. Add a
+50-column rendering regression and make the Lua startup/UI tests reject any
+future use of `unicode.wtrunc` in this path.
+
 ## 1.0.1 - 2026-10-26
 
 Fix the startup crash on actual GTNH OpenOS: the bundled application no longer

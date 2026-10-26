@@ -4,13 +4,24 @@ function M.new(gpu,event,keyboard,unicode)
   local keys=keyboard.keys
   local focus
   local function len(s) return unicode.len(s) end
-  local function sub(s,a,b) return unicode.sub(s,a,b) end
+  local function sub(s,a,b)
+    local count=len(s)
+    if a>count or (b and b<a) then return '' end
+    return unicode.sub(s,a,b and math.min(b,count) or nil)
+  end
   local function width(s) return unicode.wlen and unicode.wlen(s) or len(s) end
   local function clip(s,n)
     s=tostring(s):gsub('[\r\n\t]',' ')
     if n<=0 then return '' end
-    if unicode.wtrunc then return unicode.wtrunc(s,n) end
-    return sub(s,1,n)
+    if width(s)<=n then return s end
+    -- OpenOS unicode.wtrunc can index one past the string at the screen edge.
+    -- Find the longest prefix that fits without asking unicode.sub past len(s).
+    local low,high=0,len(s)
+    while low<high do
+      local middle=math.floor((low+high+1)/2)
+      if width(sub(s,1,middle))<=n then low=middle else high=middle-1 end
+    end
+    return sub(s,1,low)
   end
   function ui.text(x,y,s,color,bg,n)
     if y<1 or y>ui.h or x>ui.w then return end

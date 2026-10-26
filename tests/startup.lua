@@ -30,7 +30,7 @@ package.preload.unicode=function()
     len=string.len,
     wlen=string.len,
     sub=string.sub,
-    wtrunc=function(s,n) return s:sub(1,n) end,
+    wtrunc=function() error('OpenOS unicode.wtrunc must not be used for clipping') end,
   }
 end
 
