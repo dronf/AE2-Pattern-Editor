@@ -1,0 +1,15 @@
+name: Test OpenOS application
+on: [push, pull_request]
+jobs:
+  lua:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install lupa==2.6
+      - run: python tools/test.py
+      - run: python tools/build.py
+      - run: git diff --exit-code -- installer.lua
+      - run: python tools/check_release.py

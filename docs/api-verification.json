@@ -1,0 +1,49 @@
+{
+  "oc": "OpenComputers-1.12.64-GTNH.jar",
+  "ae2": "appliedenergistics2-rv3-beta-1080-GTNH.jar",
+  "jarSha256": {
+    "OpenComputers-1.12.64-GTNH.jar": "f1fba20d2b76b61463dc1356aac1dc80f1054c3e22260b5232849228e9d1d404",
+    "appliedenergistics2-rv3-beta-1080-GTNH.jar": "7bcada90f561ff6c17e577b0c87ad1a1b0a7cf98fc8e934c18a67bdec11fd89f"
+  },
+  "inspectedClasses": {
+    "li.cil.oc.integration.appeng.DriverBlockInterface$Environment": {
+      "sha256": "75124aaffbbda307428f09673960d65cfcab966d933eeb8b39ed0c29cff3cca7",
+      "methods": [
+        "getInterfacePattern",
+        "setInterfacePatternInput",
+        "setInterfacePatternOutput",
+        "getItemsInNetwork",
+        "getFluidsInNetwork"
+      ]
+    },
+    "li.cil.oc.integration.appeng.DriverPartInterfaceTerminal$Environment": {
+      "sha256": "76003298211839825818211d1a274c93f110b9cb9d81fb5db3a3a95d9af07a6f",
+      "methods": [
+        "getInterfaces",
+        "getInterfacesByLocation",
+        "send"
+      ]
+    },
+    "li.cil.oc.integration.appeng.internal.PatternEnvironment$class": {
+      "sha256": "890e1f06d38a8c8b0647b592769ce4b170433782e445b9614f4f427830aaa0b3",
+      "methods": [
+        "getPatternNBT",
+        "setPatternSlot"
+      ]
+    },
+    "li.cil.oc.integration.appeng.ConverterPattern$": {
+      "sha256": "5f36ca23993031cb2a30148358d9d248cd168b9f6be357940c680d52be50c979",
+      "methods": [
+        "convert"
+      ]
+    },
+    "li.cil.oc.integration.vanilla.ConverterItemStack$": {
+      "sha256": "01eb479e9b45c3e87a5f4a6a5fe25165b37eca17f42cbc59a52940b155e19681",
+      "methods": [
+        "convert",
+        "parse"
+      ]
+    }
+  },
+  "scope": "Static bytecode/API inspection; not an in-game execution test."
+}
