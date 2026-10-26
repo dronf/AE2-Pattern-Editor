@@ -15,8 +15,9 @@
 | src/ape/app.lua | Setup, search/editor/picker/preview/recovery application screens |
 | src/ape/demo.lua | Disconnected AE/OC fixture for demo and regression tests |
 
-Source `main.lua` adds src to the module path. The build registers each module
-in package.preload and appends main.lua to produce a single OpenOS application.
+Source `main.lua` uses OpenOS's `_` environment value to add src to the module
+path. The build registers each module in package.preload and appends main.lua;
+the bundled application therefore does not need path discovery at startup.
 The demo is bundled but only selected with --demo; it does not access real AE
 components. OpenOS component/screen access is still needed to display the demo.
 

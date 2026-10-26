@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.1 - 2026-10-26
+
+Fix the startup crash on actual GTNH OpenOS: the bundled application no longer
+calls the nonexistent `shell.getRunningProgram` method. Add regression coverage
+that launches the built file in normal and demo modes without that method.
+The installer preserves existing settings and recovery data on update.
+
 ## 1.0.0 - 2026-10-25
 
 Initial OpenOS application: terminal-wide processing-pattern search, input/output

@@ -11,13 +11,13 @@ the installer/application. It runs independently of Level Maintainer.
 
 ## Download and install
 
-[Release v1.0.0](https://github.com/dronf/AE2-Pattern-Editor/releases/tag/v1.0.0)
+[Release v1.0.1](https://github.com/dronf/AE2-Pattern-Editor/releases/tag/v1.0.1)
 contains the built, self-contained `pattern_editor.lua`, a verified installer,
 and an offline OC ZIP. On your OpenOS computer:
 
 ```sh
 cd /home
-wget -f https://raw.githubusercontent.com/dronf/AE2-Pattern-Editor/v1.0.0/installer.lua ape-install.lua
+wget -f https://raw.githubusercontent.com/dronf/AE2-Pattern-Editor/v1.0.1/installer.lua ape-install.lua
 ape-install
 pattern_editor --demo
 ```
@@ -52,8 +52,9 @@ API/bytecode compatibility checked with **OpenComputers 1.12.64-GTNH** and
 Interface Terminal each need an adjacent OC Adapter connected to the computer.
 The editing interface must be on the same AE network as the source patterns.
 
-**Initial release: automated integration, UI, recovery and installed-JAR API
-checks passed; a live Minecraft session has not been tested.** Start with a
+**v1.0.0 failed at launch in a real OC computer because it called an absent
+OpenOS shell method. v1.0.1 removes that call and has a startup regression
+test; live retesting and pattern editing remain to be verified.** Start with a
 disposable processing pattern and follow the [in-game checklist](docs/VERIFICATION.md).
 
 Crafting-grid patterns are viewable but read-only. Normal item and untagged

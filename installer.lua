@@ -1,10 +1,10 @@
--- Generated pinned installer for AE2 Pattern Editor 1.0.0.
+-- Generated pinned installer for AE2 Pattern Editor 1.0.1.
 local internet=require('internet')
 local filesystem=require('filesystem')
 local shell=require('shell')
 local target=filesystem.concat(shell.getWorkingDirectory(),'pattern_editor.lua')
 local temp=target..'.download'
-local url='https://github.com/dronf/AE2-Pattern-Editor/releases/download/v1.0.0/pattern_editor.lua'
+local url='https://github.com/dronf/AE2-Pattern-Editor/releases/download/v1.0.1/pattern_editor.lua'
 local function adler(s)
   local a,b=1,0
   for i=1,#s do a=(a+s:byte(i))%65521; b=(b+a)%65521 end
@@ -14,15 +14,15 @@ local function close(f)
   local result,err=f:close()
   assert(result~=false and not (result==nil and err~=nil),err or 'Close failed')
 end
-print('Downloading AE2 Pattern Editor 1.0.0...')
+print('Downloading AE2 Pattern Editor 1.0.1...')
 local ok,err=pcall(function()
   local chunks,size={},0
   for chunk in internet.request(url) do
-    size=size+#chunk; assert(size<=49781,'Unexpected download size')
+    size=size+#chunk; assert(size<=49962,'Unexpected download size')
     chunks[#chunks+1]=chunk
   end
   local body=table.concat(chunks)
-  assert(#body==49781 and adler(body)=='895c0994','Download verification failed; old installation retained')
+  assert(#body==49962 and adler(body)=='971946b0','Download verification failed; old installation retained')
   assert(load(body,'=pattern_editor','t',{}),'Downloaded Lua did not compile')
   local f=assert(io.open(temp,'wb'))
   local wrote,reason=pcall(function() assert(f:write(body)); assert(f:flush()) end)
@@ -36,5 +36,5 @@ local ok,err=pcall(function()
   end
 end)
 if not ok then error('Install stopped: '..tostring(err),0) end
-print('Installed pattern_editor.lua 1.0.0. Settings/journal were preserved.')
+print('Installed pattern_editor.lua 1.0.1. Settings/journal were preserved.')
 print('Run: pattern_editor --demo   (simulation), or: pattern_editor   (real setup)')

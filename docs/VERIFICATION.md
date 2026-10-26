@@ -1,4 +1,4 @@
-# Verification for v1.0.0
+# Verification for v1.0.1
 
 [Overview](../README.md) - [Development](DEVELOPMENT.md)
 
@@ -6,9 +6,9 @@
 
 This is a built OpenOS Lua application, not a Java mod. Automated tests execute
 the real Lua model, API adapter, transaction engine and UI under Lua 5.2 and 5.3.
-Actual installed JAR bytecode is inspected separately. **No live Minecraft/OC
-session has been executed for this initial release.** That distinction applies
-to all results below; simulation is not a claim of in-world validation.
+Actual installed JAR bytecode is inspected separately. **A live Minecraft/OC
+launch exposed a v1.0.0 startup crash. v1.0.1 fixes that path, but has not yet
+been retested in-world.** Simulation is not a claim of in-world validation.
 
 ## Automated checks
 
@@ -28,6 +28,8 @@ to all results below; simulation is not a claim of in-world validation.
   Render calls are checked against screen bounds. Top-row/numpad keys,
   Backspace/Delete, cursor movement, Ctrl+A, paste and UTF-8 text are exercised.
 - Journal persistence checks and release/installer checks described by the tests.
+- Built entry-point smoke tests for `--help`, normal Setup startup and `--demo`
+  under Lua 5.2 and 5.3 without the nonexistent `shell.getRunningProgram` API.
 
 The test runner prints current assertion/fault-injection counts. These are
 executed against the source modules; release validation also compiles and

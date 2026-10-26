@@ -53,14 +53,20 @@ An Internet Card is needed for this download, not normal use:
 
 ```sh
 cd /home
-wget -f https://raw.githubusercontent.com/dronf/AE2-Pattern-Editor/v1.0.0/installer.lua ape-install.lua
+wget -f https://raw.githubusercontent.com/dronf/AE2-Pattern-Editor/v1.0.1/installer.lua ape-install.lua
 ape-install
 ```
 
-The installer fetches the pinned v1.0.0 release application, verifies it, then
+The installer fetches the pinned v1.0.1 release application, verifies it, then
 installs `/home/pattern_editor.lua`. The previous file is retained as
 `pattern_editor.lua.previous`. Run `pattern_editor --demo` to inspect the UI
 without accessing real AE components. Demo data lives separately.
+
+If v1.0.0 crashes with `getRunningProgram` nil, reinstall using the v1.0.1
+command above. Run `pattern_editor --demo` first, then `pattern_editor` for
+real Setup. An Adapter beside the Interface Terminal's cable does not make a
+visible AE cable join; check detection at the OpenOS `lua>` prompt with the
+single expression `=require("component").isAvailable("me_interface_terminal")`.
 
 For offline installation, download and extract the release's OC ZIP on your
 PC, then copy `pattern_editor.lua` onto the OC hard drive using your available

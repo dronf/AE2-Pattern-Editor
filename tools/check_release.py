@@ -7,11 +7,12 @@ a=p.parse_args()
 if a.deps: sys.path.insert(0,str(a.deps.resolve()))
 root=Path(__file__).resolve().parents[1]
 os.chdir(root)
+version=re.search(r"VERSION='([^']+)'",(root/'src/ape/app.lua').read_text(encoding='utf-8')).group(1)
 bundle=(root/'dist/pattern_editor.lua').read_text(encoding='utf-8')
 for line in (root/'dist/SHA256SUMS.txt').read_text().splitlines():
     sha,name=line.split('  ')
     assert hashlib.sha256((root/'dist'/name).read_bytes()).hexdigest()==sha,name
-for path in (root/'dist').glob('*.zip'):
+for path in (root/'dist').glob(f'ae2-pattern-editor-{version}-*.zip'):
     with zipfile.ZipFile(path) as z:
         assert z.testzip() is None
         assert all(not n.startswith('/') and '..' not in Path(n).parts for n in z.namelist())
@@ -29,8 +30,10 @@ for path in [root/'README.md',root/'CHANGELOG.md',*root.glob('docs/*.md')]:
 json.loads((root/'docs/api-verification.json').read_text())
 for version in ['lua52','lua53']:
     module=__import__('lupa.'+version,fromlist=['LuaRuntime'])
+    startup=module.LuaRuntime()
+    startup.globals().APP=bundle
+    startup.execute((root/'tests/startup.lua').read_text(encoding='utf-8'))
     lua=module.LuaRuntime()
-    lua.execute("package.preload.shell=function() return {getRunningProgram=function() return '/home/pattern_editor.lua' end} end; package.preload.filesystem=function() return {path=function() return '/home/' end} end")
     lua.execute(bundle,'--help')
     # These require() calls resolve bundled package.preload modules, not source files.
     print('Testing built bundle under',version,flush=True)
