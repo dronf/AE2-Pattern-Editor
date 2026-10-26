@@ -36,6 +36,10 @@ fails(function() C.decode('S10:a') end)
 fails(function() C.decode('Nextra') end)
 local cycle={}; cycle.self=cycle; fails(function() C.encode(cycle) end)
 local d,api,store,tx,r=fixture()
+check(d.terminal.getInterfaces()().side=='UNKNOWN','Fixture must mirror OC ForgeDirection strings')
+local interfaces=api.interfaces()
+check(interfaces[1].endpoint.side==2 and interfaces[2].endpoint.side==6 and interfaces[3].endpoint.side==6,
+  'Normalize part and full-block interface sides')
 local p=r.pattern
 check(#api.scan()==4,'Includes source slots 0/8 and crafting-grid pattern, excludes editor')
 check(Model.match(p,'QUANTIUM','inputs'))

@@ -32,7 +32,14 @@ function M.new()
   end
   local function iterator(rows)
     local i=0
-    return function() i=i+1; return rows[i] and C.copy(rows[i]) end
+    local sides={[0]='DOWN',[1]='UP',[2]='NORTH',[3]='SOUTH',[4]='WEST',[5]='EAST',[6]='UNKNOWN'}
+    return function()
+      i=i+1
+      if not rows[i] then return nil end
+      local out=C.copy(rows[i])
+      out.side=sides[out.side] or out.side
+      return out
+    end
   end
   local terminal={}
   function terminal.getInterfaces() return iterator(inventories) end

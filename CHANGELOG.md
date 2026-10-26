@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.4 - 2026-10-26
+
+Fix Setup incorrectly reporting that no full-block interface is visible when
+OpenComputers returns the interface side as the ForgeDirection string
+`UNKNOWN`. Normalize all terminal side names before matching, reading and
+moving patterns. Simulate actual terminal direction values in the regression
+fixture and exercise first-run Setup through the full UI.
+
 ## 1.0.3 - 2026-10-26
 
 Make every enabled screen button reachable by Tab and activatable by Enter,

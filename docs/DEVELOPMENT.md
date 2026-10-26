@@ -46,6 +46,9 @@ python tools/verify_api.py --mods /path/to/instance/mods --output docs/api-verif
 
 - Terminal `getInterfaces()` and `getInterfacesByLocation()` return callable
   iterator values. Their pattern map keys and transfer slots are **zero-based**.
+- Terminal interface `side` may arrive as a ForgeDirection string (`UNKNOWN`
+  for a full block, `NORTH` etc. for a part); normalize to the corresponding
+  numeric side 0-6 before Setup filtering, comparisons or transfer calls.
 - Local `getInterfacePattern`, setters, and ingredient indices are **one-based**.
 - Terminal `send(source,target)` moves a physical encoded pattern. It refuses
   an occupied destination. The source/target include location, side and slot.

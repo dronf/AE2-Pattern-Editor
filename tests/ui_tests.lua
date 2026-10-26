@@ -192,6 +192,42 @@ function M.run(check,fails,memoryStore)
       end})
     check(phase==3 and state.mode=='main','Normal-mode keyboard path must exit cleanly')
   end
+  -- Setup must accept OC's ForgeDirection names, including UNKNOWN for a
+  -- terminal-visible full-block interface, and persist a numeric endpoint.
+  do
+    local d=require('ape.demo').new()
+    local store=memoryStore()
+    local addresses={{'terminal','me_interface_terminal'},{'editor','me_interface'}}
+    local component={
+      list=function()
+        local i=0
+        return function()
+          i=i+1
+          local row=addresses[i]
+          if row then return row[1],row[2] end
+        end
+      end,
+      proxy=function(address)
+        if address=='terminal' then return d.terminal end
+        if address=='editor' then return d.editor end
+        error('Unexpected component '..tostring(address))
+      end}
+    local events={{'touch','screen',8,2,0,'player'},kd(keys.down),kd(keys.enter),kd(keys.q,113)}
+    local phase,nextEvent=0,nil
+    local event={pull=function() local e=assert(nextEvent,'Missing setup event'); nextEvent=nil; return table.unpack(e) end}
+    local state=require('ape.app').run({gpu=screen(50,16),event=event,keyboard=keyboard,
+      unicode=unicode,component=component,store=store,onDraw=function(s)
+        phase=phase+1
+        check(s.error==nil,'Setup must accept terminal direction names: '..tostring(s.error))
+        if phase==1 then check(s.mode=='main')
+        elseif phase==2 or phase==3 then
+          check(s.mode=='choose' and #s.choice.items==2,'Setup must list both full-block interfaces')
+          if phase==3 then check(s.choice.items[s.choice.selected].label:find('Pattern Editor',1,true)) end
+        elseif phase==4 then check(s.mode=='main' and store.data.settings.station.side==6,'Setup saved numeric full-block side') end
+        nextEvent=assert(events[phase],'Extra setup draw')
+      end})
+    check(phase==4 and state.mode=='main','Setup must finish and exit cleanly')
+  end
   -- Public helpers for other regression suites.
   M.screen=screen; M.unicode=unicode; M.keyboard=keyboard
 end

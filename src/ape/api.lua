@@ -1,10 +1,18 @@
 local C=require('ape.codec')
 local Model=require('ape.model')
 local M={}
+local directions={DOWN=0,UP=1,NORTH=2,SOUTH=3,WEST=4,EAST=5,UNKNOWN=6}
+local function direction(value)
+  if value==nil then return 6 end
+  if type(value)=='string' then value=directions[value:upper()] end
+  assert(type(value)=='number' and value%1==0 and value>=0 and value<=6,
+    'Unsupported interface side from ME Interface Terminal')
+  return value
+end
 local function endpoint(info,slot)
   local l=info.location
   assert(type(l)=='table' and l.x and l.y and l.z, 'Interface location unavailable')
-  return {location=C.copy(l),side=info.side or 6,slot=slot or 0}
+  return {location=C.copy(l),side=direction(info.side),slot=slot or 0}
 end
 function M.samePlace(a,b)
   return a.side==b.side and C.equal(a.location,b.location)

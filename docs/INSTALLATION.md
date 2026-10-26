@@ -53,22 +53,25 @@ An Internet Card is needed for this download, not normal use:
 
 ```sh
 cd /home
-wget -f https://raw.githubusercontent.com/dronf/AE2-Pattern-Editor/v1.0.3/installer.lua ape-install.lua
+wget -f https://raw.githubusercontent.com/dronf/AE2-Pattern-Editor/v1.0.4/installer.lua ape-install.lua
 ape-install
 ```
 
-The installer fetches the pinned v1.0.3 release application, verifies it, then
+The installer fetches the pinned v1.0.4 release application, verifies it, then
 installs `/home/pattern_editor.lua`. The previous file is retained as
 `pattern_editor.lua.previous`. Run `pattern_editor --demo` to inspect the UI
 without accessing real AE components. Demo data lives separately.
 
 If an older version crashes with `getRunningProgram` nil or
 `Index 51 out of bounds for length 51`, or the demo cannot select Quit with
-the keyboard, reinstall using the v1.0.3 command above. Run
+the keyboard, reinstall using the v1.0.4 command above. Run
 `pattern_editor --demo` first, then `pattern_editor` for
 real Setup. An Adapter beside the Interface Terminal's cable does not make a
 visible AE cable join; check detection at the OpenOS `lua>` prompt with the
 single expression `=require("component").isAvailable("me_interface_terminal")`.
+If v1.0.3 showed `No terminal-visible full-block interface` despite an
+interface on the same AE grid, update to v1.0.4. OpenComputers reports a
+full-block interface's side as `UNKNOWN`, which older versions rejected.
 
 For offline installation, download and extract the release's OC ZIP on your
 PC, then copy `pattern_editor.lua` onto the OC hard drive using your available
@@ -84,6 +87,9 @@ or source directory is needed on the OC computer.
 3. Select **Pattern Editor** from the terminal's full-block interface list.
    Verify its displayed coordinates against the physical interface touching
    the editing adapter. It must be the same interface, not another empty one.
+   If it is still absent after updating, check that the ME Interface itself
+   has a channel on the terminal's AE grid. The OC adapter connection alone
+   does not make it visible to the AE Interface Terminal.
 4. Select **Scan**, then test on a disposable processing pattern first.
 5. Open a result, make a draft change, Preview, and Apply. Check the original
    interface to confirm the pattern returned and the editing slot is empty.

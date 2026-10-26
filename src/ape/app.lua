@@ -1,7 +1,7 @@
 local C=require('ape.codec')
 local Model=require('ape.model')
 local Api=require('ape.api')
-local M={VERSION='1.0.3'}
+local M={VERSION='1.0.4'}
 function M.run(options)
   options=options or {}
   local component=options.component or require('component')
@@ -93,13 +93,14 @@ function M.run(options)
         local temp=Api.new(component.proxy(t.value),component.proxy(e.value))
         progress('Reading interfaces for setup...')
         local candidates={}
-        for _,i in ipairs(temp.interfaces()) do
+        local visible=temp.interfaces()
+        for _,i in ipairs(visible) do
           if i.endpoint.side==6 then
             local l=i.endpoint.location
             candidates[#candidates+1]={label=i.name..' @ '..l.x..','..l.y..','..l.z,value=i.endpoint}
           end
         end
-        assert(#candidates>0,'No terminal-visible full-block interface; check channels and visibility')
+        assert(#candidates>0,'No full-block ME Interface in terminal list ('..#visible..' visible). Check its AE channel and grid.')
         choose('Select the EMPTY interface physically touching the editing Adapter',candidates,function(s)
           assert(temp.read(s.value)==nil,'Selected interface slot 1 is occupied')
           assert(component.proxy(e.value).getInterfacePattern(1)==nil,'Local editing slot 1 is occupied')
