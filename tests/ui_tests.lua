@@ -197,7 +197,8 @@ function M.run(check,fails,memoryStore)
   do
     local d=require('ape.demo').new()
     local store=memoryStore()
-    local addresses={{'terminal','me_interface_terminal'},{'editor','me_interface'}}
+    local addresses={{'terminal','me_interface_terminal'},{'part','me_interface'},{'editor','me_interface'}}
+    local part={getInterfacePattern=function() error('side required') end}
     local component={
       list=function()
         local i=0
@@ -210,7 +211,12 @@ function M.run(check,fails,memoryStore)
       proxy=function(address)
         if address=='terminal' then return d.terminal end
         if address=='editor' then return d.editor end
+        if address=='part' then return part end
         error('Unexpected component '..tostring(address))
+      end,
+      doc=function(address,method)
+        if method=='getInterfaceConfiguration' and address=='part' then return 'function(side:number[, slot:number]):table' end
+        if method=='getInterfaceConfiguration' and address=='editor' then return 'function([slot:number]):table' end
       end}
     local events={{'touch','screen',8,2,0,'player'},kd(keys.down),kd(keys.enter),kd(keys.q,113)}
     local phase,nextEvent=0,nil
@@ -223,7 +229,10 @@ function M.run(check,fails,memoryStore)
         elseif phase==2 or phase==3 then
           check(s.mode=='choose' and #s.choice.items==2,'Setup must list both full-block interfaces')
           if phase==3 then check(s.choice.items[s.choice.selected].label:find('Pattern Editor',1,true)) end
-        elseif phase==4 then check(s.mode=='main' and store.data.settings.station.side==6,'Setup saved numeric full-block side') end
+        elseif phase==4 then
+          check(s.mode=='main' and store.data.settings.station.side==6,'Setup saved numeric full-block side')
+          check(store.data.settings.editor=='editor','Setup must exclude part-interface components')
+        end
         nextEvent=assert(events[phase],'Extra setup draw')
       end})
     check(phase==4 and state.mode=='main','Setup must finish and exit cleanly')

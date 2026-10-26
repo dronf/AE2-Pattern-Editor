@@ -1,4 +1,4 @@
-# Verification for v1.0.5
+# Verification for v1.0.6
 
 [Overview](../README.md) - [Development](DEVELOPMENT.md)
 
@@ -10,8 +10,10 @@ Actual installed JAR bytecode is inspected separately. **Live Minecraft/OC
 launches exposed a v1.0.0 startup crash, a v1.0.1 demo-title rendering crash,
 and missing keyboard navigation in v1.0.2. The v1.0.3 in-game Setup then
 rejected a visible full-block interface. v1.0.4 reached Scan in-world, where
-the 52-interface/355-pattern network ran out of OC memory. v1.0.5 reduces the
-retained scan data, but its result has not yet been retested in-world.**
+the 52-interface/355-pattern network ran out of OC memory. v1.0.5 completed
+the scan and reached Apply in-world, but stopped after moving a pattern when
+the adapter check failed. v1.0.6 addresses two possible false selections and
+comparisons; its result has not yet been retested in-world.**
 Simulation is not a claim of in-world validation.
 
 ## Automated checks
@@ -31,6 +33,10 @@ Simulation is not a claim of in-world validation.
   The Add/Replace catalog reads visible pattern identities only on demand.
 - Stale-source rejection, occupied staging slot, partial edits, unexpected
   station mutation, wrong adapter binding and exact return-slot verification.
+- Setup excludes part-interface OC components despite their shared
+  `me_interface` type. Post-transfer adapter binding compares the adapter and
+  terminal views of the destination, and Restore can return an untouched
+  pattern even if the unrelated adapter read errors.
 - Exhaustive before/after interruption injection at journal saves, movements,
   writes and completion boundaries, followed by Finish or Restore recovery.
 - Full mouse/keyboard application journeys at 50x16, 80x25 and 160x50: scan,

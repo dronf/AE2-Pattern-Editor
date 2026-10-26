@@ -54,6 +54,9 @@ python tools/verify_api.py --mods /path/to/instance/mods --output docs/api-verif
   do not retain every pattern's binary NBT in the scan cache. Catalog identities
   are read on demand when Add/Replace opens.
 - Local `getInterfacePattern`, setters, and ingredient indices are **one-based**.
+- Both part and full-block ME Interfaces expose `me_interface` and pattern
+  callbacks. A part requires a side before the slot; Setup must select only a
+  full-block editor. The optional-slot callback on a block accepts no arguments.
 - Terminal `send(source,target)` moves a physical encoded pattern. It refuses
   an occupied destination. The source/target include location, side and slot.
 - Ingredient setters accept `(patternSlot,index,detail,type)`, where type is
@@ -66,6 +69,9 @@ python tools/verify_api.py --mods /path/to/instance/mods --output docs/api-verif
 - Fluid conversion does not round-trip NBT; tagged fluids are deliberately rejected.
 - Recover using actual inventories plus the saved before/after states; a phase
   alone cannot establish whether a callback ran before power loss.
+- After moving a pattern, compare the terminal and adapter reads of the
+  destination. The source's pre-transfer outer metadata may not equal its
+  post-transfer representation; recipe identity must still match the original.
 
 Relevant upstream sources:
 

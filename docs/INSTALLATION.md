@@ -55,18 +55,18 @@ An Internet Card is needed for this download, not normal use:
 
 ```sh
 cd /home
-wget -f https://raw.githubusercontent.com/dronf/AE2-Pattern-Editor/v1.0.5/installer.lua ape-install.lua
+wget -f https://raw.githubusercontent.com/dronf/AE2-Pattern-Editor/v1.0.6/installer.lua ape-install.lua
 ape-install
 ```
 
-The installer fetches the pinned v1.0.5 release application, verifies it, then
+The installer fetches the pinned v1.0.6 release application, verifies it, then
 installs `/home/pattern_editor.lua`. The previous file is retained as
 `pattern_editor.lua.previous`. Run `pattern_editor --demo` to inspect the UI
 without accessing real AE components. Demo data lives separately.
 
 If an older version crashes with `getRunningProgram` nil or
 `Index 51 out of bounds for length 51`, or the demo cannot select Quit with
-the keyboard, reinstall using the v1.0.5 command above. Run
+the keyboard, reinstall using the v1.0.6 command above. Run
 `pattern_editor --demo` first, then `pattern_editor` for
 real Setup. An Adapter beside the Interface Terminal's cable does not make a
 visible AE cable join; check detection at the OpenOS `lua>` prompt with the
@@ -77,6 +77,9 @@ full-block interface's side as `UNKNOWN`, which older versions rejected.
 If v1.0.4 instead stops with `not enough memory` during Scan, update to
 v1.0.5 and install more OC RAM if needed. The scan now retains only a compact
 search index; opening a result reads that pattern's full data on demand.
+If v1.0.5 stopped after moving a pattern with an adapter mismatch error, use
+**Restore original** before updating. v1.0.6 excludes part-interface adapters
+from Setup and checks the terminal and adapter views of the destination.
 
 For offline installation, download and extract the release's OC ZIP on your
 PC, then copy `pattern_editor.lua` onto the OC hard drive using your available
@@ -88,7 +91,9 @@ or source directory is needed on the OC computer.
 
 1. Run `pattern_editor` and select **Setup**.
 2. If more than one terminal/editor component is available, select the correct
-   component address. With one of each, those selections are automatic.
+   component address. With one of each, those selections are automatic. The
+   editor filters out interface-part components; its adapter must touch a
+   full-block ME Interface.
 3. Select **Pattern Editor** from the terminal's full-block interface list.
    Verify its displayed coordinates against the physical interface touching
    the editing adapter. It must be the same interface, not another empty one.

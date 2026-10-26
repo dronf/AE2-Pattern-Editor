@@ -90,6 +90,18 @@ check(not tx.pending() and store.data['last-original'].original.inputs[1].size==
 check(api.read(r.endpoint).inputs[2].tag=='renamed-item-nbt')
 local current=api.read(r.endpoint)
 check(current.isCraftable==false and current.tag=='demo-pattern-metadata','Preserve pattern metadata')
+-- Moving a pattern may rewrite its outer stack metadata. The two independent
+-- readers of the destination must agree; the original source representation
+-- is not evidence that the OC adapter points at a different block.
+d,api,store,tx,r=fixture()
+local moveWithMetadata=api.move
+api.move=function(from,to)
+  moveWithMetadata(from,to)
+  if Api.samePlace(to,api.station) then d.inventories[1].patterns[0].tag='repacked-pattern-metadata' end
+end
+tx.apply(r,Model.scale(r.pattern,2))
+check(not tx.pending() and api.stageRead()==nil and api.read(r.endpoint).tag=='repacked-pattern-metadata',
+  'A valid destination must not be rejected because its outer metadata changed on transfer')
 -- Processing patterns can contain empty native NBT slots. Logical rows must target
 -- their real physical indices, and deletion shifts subsequent native positions.
 d,api,store,tx,r=fixture()
@@ -198,6 +210,20 @@ fails(function() tx.apply(r,twice) end)
 tx.resume('restore')
 api.stageRead=actual
 check(api.read(r.endpoint)~=nil and not tx.pending())
+-- Restore must still return an unchanged remote pattern if the unrelated or
+-- disconnected adapter throws when its local slot is read.
+d,api,store,tx,r=fixture()
+local localRead=api.stageRead
+local reads=0
+api.stageRead=function()
+  reads=reads+1
+  if reads==1 then return nil end
+  error('Adapter unavailable')
+end
+fails(function() tx.apply(r,twice) end,'Adapter unavailable')
+tx.resume('restore')
+api.stageRead=localRead
+check(not tx.pending() and api.read(r.endpoint)~=nil and api.stageRead()==nil)
 -- Headless screen, keyboard and real application journeys.
 require('persistence_tests').run(check,fails)
 require('ui_tests').run(check,fails,memoryStore)

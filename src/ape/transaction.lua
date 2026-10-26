@@ -70,8 +70,10 @@ function M.new(api,store)
     save(j)
     api.move(j.source,j.station)
     j.state='staged'; save(j)
+    local remote=assert(api.read(j.station),'Transferred pattern is not visible in the selected editing interface')
+    assert(same(remote,j.original),'Transferred pattern changed unexpectedly; use Restore original')
     local staged=api.stageRead()
-    assert(staged and Model.fingerprint(staged)==j.sourceFingerprint,
+    assert(staged and Model.fingerprint(staged)==Model.fingerprint(remote),
       'Adapter does not point to the selected editing interface; use Restore original')
     return self.resume('finish')
   end
@@ -92,7 +94,11 @@ function M.new(api,store)
       api.move(j.source,j.station)
       remoteStage=api.read(j.station)
     else assert(not source, 'Original slot is occupied; never overwrite it') end
-    local localStage=api.stageRead()
+    local readOk,localStage=pcall(api.stageRead)
+    if not readOk then
+      if action~='restore' then error(localStage) end
+      localStage=nil
+    end
     if not localStage or Model.fingerprint(localStage)~=Model.fingerprint(remoteStage) then
       -- Wrong adapter: no edits have been made through it if the station remains original.
       assert(action=='restore' and same(remoteStage,j.original),

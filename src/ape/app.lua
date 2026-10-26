@@ -1,7 +1,7 @@
 local C=require('ape.codec')
 local Model=require('ape.model')
 local Api=require('ape.api')
-local M={VERSION='1.0.5'}
+local M={VERSION='1.0.6'}
 function M.run(options)
   options=options or {}
   local component=options.component or require('component')
@@ -72,11 +72,25 @@ function M.run(options)
     state.choice={title=title,items=items,callback=callback,back=back,selected=1}
     mode('choose')
   end
+  local function blockEditor(address,proxy)
+    if component.doc then
+      local ok,doc=pcall(component.doc,address,'getInterfaceConfiguration')
+      if ok and type(doc)=='string' then
+        if doc:find('function(side:number',1,true) then return false end
+        if doc:find('function([slot:number]',1,true) then return true end
+      end
+    end
+    -- Full blocks accept an omitted slot; interface parts require a side.
+    local ok,_,reason=pcall(proxy.getInterfacePattern)
+    return ok and reason==nil
+  end
   local function components(method)
     local out={}
     for address,kind in component.list() do
       local proxy=component.proxy(address)
-      if proxy[method] then out[#out+1]={label=kind..' '..address,value=address} end
+      if proxy[method] and (method~='getInterfacePattern' or blockEditor(address,proxy)) then
+        out[#out+1]={label=kind..' '..address,value=address}
+      end
     end
     table.sort(out,function(a,b) return a.label<b.label end)
     return out
@@ -88,7 +102,7 @@ function M.run(options)
     assert(#terms>0,'No ME Interface Terminal detected. Adapter must touch its cable block.')
     local function terminalSelected(t)
       local editors=components('getInterfacePattern')
-      assert(#editors>0,'No normal full-block ME Interface touching an OC Adapter')
+      assert(#editors>0,'No normal full-block ME Interface touching an OC Adapter; interface parts are not editing stations')
       local function editorSelected(e)
         local temp=Api.new(component.proxy(t.value),component.proxy(e.value))
         progress('Reading interfaces for setup...')

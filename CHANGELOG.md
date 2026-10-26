@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.0.6 - 2026-10-26
+
+Fix a protective adapter-mismatch stop seen after a pattern was moved. Setup
+now excludes AE interface-part OC components, which share `me_interface` with
+full blocks but require different callback arguments. After moving a pattern,
+the editor compares the terminal and adapter reads of the destination rather
+than comparing a post-move read with pre-move outer metadata. The recipe must
+still match the original before any editing. Restore original now tolerates an
+unrelated adapter read error when the remote pattern is unchanged.
+
 ## 1.0.5 - 2026-10-26
 
 Reduce OC memory use during network scans. Cache only a small, NBT-free search

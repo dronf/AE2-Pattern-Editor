@@ -29,6 +29,9 @@ If the wrong empty interface was chosen in Setup, the remote/local pattern
 comparison fails before editing. Restore original can return the unchanged
 remote pattern without modifying the unrelated adapter-connected interface.
 After recovery, correct Setup.
+The v1.0.6 recovery path also tolerates a read error from an unrelated adapter
+when restoring a remote pattern that still matches the original. Leave both
+AE interfaces and the journal intact until Restore succeeds.
 
 ## When automatic recovery stops
 
