@@ -1,7 +1,7 @@
 local C=require('ape.codec')
 local Model=require('ape.model')
 local Api=require('ape.api')
-local M={VERSION='1.1.0'}
+local M={VERSION='1.1.1'}
 function M.run(options)
   options=options or {}
   local component=options.component or require('component')

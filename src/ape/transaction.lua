@@ -53,6 +53,39 @@ function M.new(api,store)
     return (s==Model.signature(j.current) and C.equal(layout,j.current.layout)) or
       (j.next and s==Model.signature(j.next) and C.equal(layout,j.next.layout))
   end
+  local function adapterRead(expected)
+    local raw
+    for attempt=1,4 do
+      raw=api.stageRead()
+      if (raw==nil)==(expected=='empty') then break end
+      if attempt<4 then api.wait(0.1) end
+    end
+    return raw
+  end
+  local function probeBinding(j)
+    -- Terminal and Adapter can serialize the outer encoded-pattern stack
+    -- differently. Observe the physical slot transition before trusting a
+    -- recipe-only comparison; an unrelated identical pattern will not clear.
+    assert(j.state=='prepared' or j.state=='staged' or j.state=='probing',
+      'Cannot probe after editing has begun')
+    j.state='probing'; save(j)
+    assert(api.read(j.source)==nil, 'Original slot became occupied; journal retained')
+    api.move(j.station,j.source)
+    assert(api.read(j.station)==nil and same(api.read(j.source),j.original),
+      'Probe return verification failed; preserve the journal')
+    assert(adapterRead('empty')==nil,
+      'Editing Adapter did not clear when the pattern left; use Restore original')
+    j.probeCleared=true; save(j)
+    api.move(j.source,j.station)
+    assert(api.read(j.source)==nil and same(api.read(j.station),j.original),
+      'Probe staging verification failed; preserve the journal')
+    local localStage=adapterRead('present')
+    assert(localStage and same(localStage,j.original) and
+      C.equal(Model.pattern(localStage).layout,j.original.layout),
+      'Editing Adapter did not show the returned pattern; use Restore original')
+    j.bindingVerified=true; j.state='staged'; save(j)
+    return localStage
+  end
   local function rewrite(j,target)
     local raw=assert(api.stageRead(), 'Editing station is empty')
     assert(allowed(j,raw), 'Station contents changed unexpectedly; automatic editing stopped')
@@ -82,7 +115,9 @@ function M.new(api,store)
       end
       for i=#j.current[side],#target[side]+1,-1 do step(side,i,nil) end
     end
-    assert(same(api.stageRead(),target), 'Final verification mismatch')
+    assert(same(api.stageRead(),target), 'Final Adapter verification mismatch')
+    assert(same(api.read(j.station),target),
+      'Final terminal verification mismatch; preserve the journal')
   end
   function self.pending()
     local j=store.pending()
@@ -132,19 +167,12 @@ function M.new(api,store)
     j.state='staged'; save(j)
     local remote=assert(api.read(j.station),'Transferred pattern is not visible in the selected editing interface')
     assert(same(remote,j.original),'Transferred pattern changed unexpectedly; use Restore original')
-    local staged
-    for attempt=1,3 do
-      staged=api.stageRead()
-      if staged and Model.fingerprint(staged)==Model.fingerprint(remote) then break end
-      if attempt<3 then api.wait(0.1) end
-    end
+    local staged=adapterRead('present')
     if not staged then
       error('Editing Adapter sees an empty slot after transfer; use Restore original, then check Adapter selection')
     end
-    if Model.fingerprint(staged)~=Model.fingerprint(remote) then
-      if signature(staged)==signature(remote) then
-        error('Adapter sees the same recipe but different encoded-pattern metadata; use Restore original')
-      end
+    if signature(staged)~=signature(remote) or
+      not C.equal(Model.pattern(staged).layout,Model.pattern(remote).layout) then
       error('Adapter sees a different recipe than the selected editing interface; use Restore original')
     end
     return self.resume('finish')
@@ -161,9 +189,19 @@ function M.new(api,store)
         'Pattern is missing or changed; preserve the journal and inspect both interfaces')
       -- A crash after returning the pattern is resolved by inspecting its actual state.
       local wanted=action=='restore' and j.original or j.draft
-      if same(source,wanted) then store.finish(j); return true end
-      assert(j.state=='prepared', 'Pattern already returned with different contents; rescan before another edit')
-      assert(Model.fingerprint(source)==j.sourceFingerprint, 'Source was modified during interruption')
+      if same(source,wanted) and (action=='restore' or j.state=='returning') then
+        store.finish(j); return true
+      end
+      assert(j.state=='prepared' or j.state=='probing',
+        'Pattern already returned with different contents; rescan before another edit')
+      if j.state=='probing' then
+        assert(same(source,j.original), 'Probe source changed; preserve the journal')
+        assert(adapterRead('empty')==nil,
+          'Editing Adapter did not clear when the pattern left; use Restore original')
+        j.probeCleared=true; save(j)
+      else
+        assert(Model.fingerprint(source)==j.sourceFingerprint, 'Source was modified during interruption')
+      end
       api.move(j.source,j.station)
       remoteStage=api.read(j.station)
     else assert(not source, 'Original slot is occupied; never overwrite it') end
@@ -172,7 +210,27 @@ function M.new(api,store)
       if action~='restore' then error(localStage) end
       localStage=nil
     end
-    if not localStage or Model.fingerprint(localStage)~=Model.fingerprint(remoteStage) then
+    if localStage and not j.bindingVerified and j.probeCleared and
+      same(localStage,j.original) and
+      C.equal(Model.pattern(localStage).layout,j.original.layout) and
+      same(remoteStage,j.original) then
+      j.bindingVerified=true; j.state='staged'; save(j)
+    end
+    -- Older journals can already be mid-edit; they cannot safely be moved
+    -- through a fresh probe, so keep their exact-read recovery contract.
+    if localStage and not j.bindingVerified and j.state=='editing' and
+      Model.fingerprint(localStage)==Model.fingerprint(remoteStage) then
+      j.bindingVerified=true; save(j)
+    end
+    if localStage and not j.bindingVerified and action=='finish' and
+      same(localStage,j.original) and same(remoteStage,j.original) and
+      C.equal(Model.pattern(localStage).layout,Model.pattern(remoteStage).layout) then
+      localStage=probeBinding(j)
+      remoteStage=api.read(j.station)
+    end
+    if not localStage or not j.bindingVerified or
+      signature(localStage)~=signature(remoteStage) or
+      not C.equal(Model.pattern(localStage).layout,Model.pattern(remoteStage).layout) then
       -- Wrong adapter: no edits have been made through it if the station remains original.
       assert(action=='restore' and same(remoteStage,j.original),
         'Adapter/station mismatch; select Restore original to return an unchanged pattern')

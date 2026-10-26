@@ -72,9 +72,14 @@ python tools/verify_api.py --mods /path/to/instance/mods --output docs/api-verif
 - Fluid conversion does not round-trip NBT; tagged fluids are deliberately rejected.
 - Recover using actual inventories plus the saved before/after states; a phase
   alone cannot establish whether a callback ran before power loss.
-- After moving a pattern, compare the terminal and adapter reads of the
-  destination. The source's pre-transfer outer metadata may not equal its
-  post-transfer representation; recipe identity must still match the original.
+- After moving a pattern, compare the terminal and Adapter recipes, including
+  native layout. Their outer encoded-pattern metadata may serialize differently.
+  Before writing, transfer the pattern back to its exact source slot and verify
+  the Adapter slot clears; transfer it to the station again and verify it
+  reappears. Journal each phase for interrupted-transfer recovery. An identical
+  recipe in a different Adapter-connected interface must not count as binding.
+- After editing, verify the final recipe through both the Adapter and terminal
+  before returning the physical pattern to its source slot.
 
 Relevant upstream sources:
 

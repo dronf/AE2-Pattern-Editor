@@ -1,4 +1,4 @@
-# Verification for v1.1.0
+# Verification for v1.1.1
 
 [Overview](../README.md) - [Development](DEVELOPMENT.md)
 
@@ -13,8 +13,10 @@ rejected a visible full-block interface. v1.0.4 reached Scan in-world, where
 the 52-interface/355-pattern network ran out of OC memory. v1.0.5 completed
 the scan and reached Apply in-world, but stopped after moving a pattern when
 the adapter check failed. v1.0.6 still stopped at the same check in-world;
-Restore original succeeded. v1.1.0 adds a short retry and a specific mismatch
-message, plus Move, but neither has yet been tested in-world.**
+Restore original succeeded. v1.1.0 added a more specific mismatch message and
+Move, and then a same-recipe/different-metadata stop was observed in-world.
+v1.1.1 adds a physical transfer probe before editing. This new behavior still
+needs in-world validation.**
 Simulation is not a claim of in-world validation.
 
 ## Automated checks
@@ -35,17 +37,19 @@ Simulation is not a claim of in-world validation.
 - Stale-source rejection, occupied staging slot, partial edits, unexpected
   station mutation, wrong adapter binding and exact return-slot verification.
 - Setup excludes part-interface OC components despite their shared
-  `me_interface` type. Post-transfer adapter binding compares the adapter and
-  terminal views of the destination, retries a briefly stale local read,
-  identifies the type of mismatch, and Restore can return an untouched
-  pattern even if the unrelated adapter read errors.
+  `me_interface` type. Post-transfer binding compares the Adapter and terminal
+  recipes/layouts and verifies the physical slot transition by transferring
+  the original pattern out and back before writing. An unrelated Adapter with
+  even an identical pattern does not clear and is rejected. Restore can return
+  an untouched pattern even if an unrelated Adapter read errors.
 - Move uses the terminal's first-free-slot `send` result, preserves existing
   destination patterns, rejects stale sources and full destinations, and allows
   read-only crafting-grid patterns to be relocated. Before/after interruption
   injection covers the move journal and physical transfer, including a crash
   before the chosen slot is recorded. Finish and Restore each leave one pattern.
 - Exhaustive before/after interruption injection at journal saves, movements,
-  writes and completion boundaries, followed by Finish or Restore recovery.
+  writes and completion boundaries, including the additional binding probe,
+  followed by Finish or Restore recovery.
 - Full mouse/keyboard application journeys at 50x16, 80x25 and 160x50: scan,
   select, type amounts, remove, pick/add, multiply/divide, preview, apply, move
   and quit. Move refuses an unsaved draft rather than silently discarding it.
@@ -97,8 +101,8 @@ are made that another server exposes NBT or supports these GTNH-specific methods
 10. With a disposable pattern, interrupt an in-progress save and restart. Verify
    Finish and Restore separately, including an occupied original slot.
 11. If Apply stops at the Adapter check, use Back > Restore original, then report
-    whether v1.1.0 says the Adapter sees an empty slot, a different recipe, or
-    the same recipe with different pattern metadata. Keep the original Setup
-    and journal until recovery succeeds.
+    the exact v1.1.1 message. A correct connection should show the pattern
+    leave and return during the binding probe. Keep the original Setup and
+    journal until recovery succeeds.
 12. Only after these checks, use it for production patterns with affected AE jobs
     stopped. Report API errors with OC/AE2 versions and retained journal files.

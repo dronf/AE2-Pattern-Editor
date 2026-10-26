@@ -282,7 +282,7 @@ end
 fails(function() tx.apply(r,twice) end,'Power loss')
 api.move=move
 d.inventories[1].patterns[0].inputs[1].size=12345
-fails(function() tx.resume('finish') end,'Unexpected pattern')
+fails(function() tx.resume('finish') end,'Adapter/station mismatch')
 check(tx.pending()~=nil)
 -- Wrong physical adapter binding is recoverable without writing to an unrelated interface.
 d,api,store,tx,r=fixture()
@@ -292,7 +292,8 @@ fails(function() tx.apply(r,twice) end,'empty slot after transfer')
 tx.resume('restore')
 api.stageRead=actual
 check(api.read(r.endpoint)~=nil and not tx.pending())
--- A post-move metadata mismatch is reported separately from a wrong recipe.
+-- Terminal and Adapter may serialize the same physical pattern's outer NBT
+-- differently. A disappearance/reappearance probe proves their connection.
 d,api,store,tx,r=fixture()
 local actualMetadata=api.stageRead
 local metadataReads=0
@@ -302,9 +303,80 @@ api.stageRead=function()
   if metadataReads>1 and current then current.tag='different-outer-metadata' end
   return current
 end
-fails(function() tx.apply(r,twice) end,'same recipe but different encoded-pattern metadata')
+tx.apply(r,twice)
+check(not tx.pending() and api.stageRead()==nil and
+  Model.signature(Model.pattern(api.read(r.endpoint)))==Model.signature(twice),
+  'Different outer metadata must not prevent a physically verified edit')
+check(store.data['last-original'].sourceFingerprint==Model.fingerprint(r.raw),
+  'Probe must preserve the original audit snapshot')
+-- A wrong Adapter may coincidentally see an identical encoded pattern. Its
+-- pattern must not be edited when it fails to clear on transfer.
+d,api,store,tx,r=fixture()
+local actualWrong=api.stageRead
+local wrongPattern=C.copy(r.raw)
+local wrongReads=0
+api.stageRead=function()
+  wrongReads=wrongReads+1
+  if wrongReads==1 then return nil end
+  return C.copy(wrongPattern)
+end
+fails(function() tx.apply(r,twice) end,'did not clear')
+check(tx.pending() and api.read(r.endpoint)~=nil and api.read(api.station)==nil,
+  'Failed probe must leave the source unchanged and retain recovery')
 tx.resume('restore')
-check(not tx.pending() and api.read(r.endpoint)~=nil)
+api.stageRead=actualWrong
+check(not tx.pending() and Model.fingerprint(api.read(r.endpoint))==Model.fingerprint(r.raw))
+-- Probe movements and journal saves are recoverable on either side of a crash.
+local probeCrashCases=0
+for actionIndex=1,35 do
+  for _,when in ipairs({'before','after'}) do
+    for _,recoveryAction in ipairs({'finish','restore'}) do
+      local dd,aa,ss,tt,rr=fixture()
+      local actual=aa.stageRead
+      aa.stageRead=function()
+        local current=actual()
+        if current then current.tag='adapter-serializes-differently' end
+        return current
+      end
+      local operation=0
+      local function wrap(obj,name)
+        local fn=obj[name]
+        obj[name]=function(...)
+          operation=operation+1
+          local hit=operation==actionIndex
+          if hit and when=='before' then error('Power loss') end
+          local result={fn(...)}
+          if hit and when=='after' then error('Power loss') end
+          return table.unpack(result)
+        end
+        return function() obj[name]=fn end
+      end
+      local resets={wrap(ss,'save'),wrap(aa,'move'),wrap(aa,'write'),wrap(ss,'finish')}
+      local ok=pcall(function() tt.apply(rr,Model.scale(rr.pattern,2)) end)
+      for _,reset in ipairs(resets) do reset() end
+      if not ok then
+        probeCrashCases=probeCrashCases+1
+        local resumed=Tx.new(aa,ss)
+        if resumed.pending() then
+          local recovered,err=pcall(function() resumed.resume(recoveryAction) end)
+          if not recovered then
+            -- A fully returned edited pattern cannot be restored by moving
+            -- it back after the return boundary; Finish closes the journal.
+            check(recoveryAction=='restore' and aa.read(rr.endpoint)~=nil,
+              'Probe recovery failed: '..tostring(err)..' at '..actionIndex..' '..when)
+            resumed.resume('finish')
+          end
+        end
+        check(not resumed.pending() and aa.stageRead()==nil and aa.read(rr.endpoint)~=nil,
+          'Probe recovery must return one pattern to the original slot')
+        local result=Model.signature(Model.pattern(aa.read(rr.endpoint)))
+        check(result==Model.signature(rr.pattern) or
+          result==Model.signature(Model.scale(rr.pattern,2)))
+      elseif operation<actionIndex then break end
+    end
+  end
+end
+check(probeCrashCases>30,'Probe fault injection missed transaction boundaries')
 -- Restore must still return an unchanged remote pattern if the unrelated or
 -- disconnected adapter throws when its local slot is read.
 d,api,store,tx,r=fixture()
@@ -322,4 +394,4 @@ check(not tx.pending() and api.read(r.endpoint)~=nil and api.stageRead()==nil)
 -- Headless screen, keyboard and real application journeys.
 require('persistence_tests').run(check,fails)
 require('ui_tests').run(check,fails,memoryStore)
-print('PASS: '..total..' checks; '..crashCases..' edit and '..moveCrashCases..' move recovery cases')
+print('PASS: '..total..' checks; '..crashCases..' edit, '..probeCrashCases..' probe and '..moveCrashCases..' move recovery cases')

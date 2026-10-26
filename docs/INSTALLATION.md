@@ -55,18 +55,18 @@ An Internet Card is needed for this download, not normal use:
 
 ```sh
 cd /home
-wget -f https://raw.githubusercontent.com/dronf/AE2-Pattern-Editor/v1.1.0/installer.lua ape-install.lua
+wget -f https://raw.githubusercontent.com/dronf/AE2-Pattern-Editor/v1.1.1/installer.lua ape-install.lua
 ape-install
 ```
 
-The installer fetches the pinned v1.1.0 release application, verifies it, then
+The installer fetches the pinned v1.1.1 release application, verifies it, then
 installs `/home/pattern_editor.lua`. The previous file is retained as
 `pattern_editor.lua.previous`. Run `pattern_editor --demo` to inspect the UI
 without accessing real AE components. Demo data lives separately.
 
 If an older version crashes with `getRunningProgram` nil or
 `Index 51 out of bounds for length 51`, or the demo cannot select Quit with
-the keyboard, reinstall using the v1.1.0 command above. Run
+the keyboard, reinstall using the v1.1.1 command above. Run
 `pattern_editor --demo` first, then `pattern_editor` for
 real Setup. An Adapter beside the Interface Terminal's cable does not make a
 visible AE cable join; check detection at the OpenOS `lua>` prompt with the
@@ -77,12 +77,11 @@ full-block interface's side as `UNKNOWN`, which older versions rejected.
 If v1.0.4 instead stops with `not enough memory` during Scan, update to
 v1.0.5 and install more OC RAM if needed. The scan now retains only a compact
 search index; opening a result reads that pattern's full data on demand.
-If Apply stops after moving a pattern with an adapter mismatch error, use
-**Back > Restore original** before updating. v1.1.0 still stops before editing
-if the Adapter does not show the same pattern as the terminal; it now retries a
-briefly stale read and reports which kind of mismatch remains. v1.0.6 has also
-stopped at this check in-world, so do not assume the earlier fix resolved every
-hardware or API mismatch.
+If an older version stops after moving a pattern with an Adapter mismatch,
+use **Back > Restore original** before updating. v1.1.1 verifies the physical
+connection with a journaled out-and-back transfer before writing. A wrong or
+disconnected Adapter still stops. This behavior has automated test coverage;
+it still needs a disposable-pattern in-game check.
 
 For offline installation, download and extract the release's OC ZIP on your
 PC, then copy `pattern_editor.lua` onto the OC hard drive using your available
@@ -110,9 +109,10 @@ or source directory is needed on the OC computer.
    destination by name and coordinates; the terminal chooses its first free
    pattern slot. Unsaved draft edits must be applied or discarded first.
 
-Setup checks both slots are empty. After the first transfer it also compares
-the remote and adapter-visible pattern before writing. A mismatch retains the
-journal and offers Restore original; it does not blindly edit another interface.
+Setup checks both slots are empty. Apply verifies the recipe in both views,
+moves the pattern out of the editing slot and checks that the Adapter sees it
+leave, then returns it and checks that the Adapter sees it reappear. Only then
+does it write. A mismatch retains the journal and offers Restore original.
 
 If Apply still reports an Adapter mismatch, choose **Back > Restore original**.
 Naming the interface proves which row you selected from the terminal, but not
@@ -129,7 +129,7 @@ Remove the test pattern, leave the station empty, rerun Setup and choose that
 address before selecting the named terminal interface. If no address sees the
 pattern, check that the Adapter touches the full-block interface and connects
 to the OC cable network. If the address is correct but Apply still stops,
-report the specific v1.1.0 mismatch message; do not bypass its safety check.
+report the specific v1.1.1 mismatch message; do not bypass its safety check.
 
 ## Updates and removal
 

@@ -67,8 +67,10 @@ moves or replaces the pattern during the transaction.
 
 Apply checks the original fingerprint against a fresh read and refuses stale
 changes. It then journals the original/draft, moves the physical pattern to the
-editing slot, writes only changed entries, reads back each step and returns the
-pattern to its exact original slot. A fresh read verifies the returned contents.
+editing slot, verifies that the Adapter sees the same physical slot through an
+out-and-back transfer, writes only changed entries, reads back each step and
+returns the pattern to its exact original slot. A fresh read verifies the
+returned contents.
 The original slot must remain empty until return. Other pattern metadata is not
 rewritten by the editing callbacks.
 

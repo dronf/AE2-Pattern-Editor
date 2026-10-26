@@ -46,6 +46,13 @@ The v1.0.6 recovery path also tolerates a read error from an unrelated adapter
 when restoring a remote pattern that still matches the original. Leave both
 AE interfaces and the journal intact until Restore succeeds.
 
+In v1.1.1, Apply moves the unchanged pattern back to its source and then into
+the editing station once more to verify which physical interface the Adapter
+sees. This probe is journaled. If it stops while the pattern is back at the
+source, **Restore original** closes the pending transaction without editing it.
+If it stops with the pattern in the editing station, Restore returns it to the
+source. Keep both slots free of unrelated patterns until recovery completes.
+
 ## When automatic recovery stops
 
 An unexpected pattern, missing physical pattern, changed ingredients, corrupt

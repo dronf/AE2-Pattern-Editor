@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.1.1 - 2026-10-26
+
+Fix Apply stopping when the Interface Terminal and editing Adapter report the
+same recipe with different encoded-pattern outer metadata. Before editing, the
+program now proves the physical connection by moving the pattern back to its
+original slot, checking that the Adapter slot clears, then returning it to
+the editing slot and checking that it reappears. This check also detects a
+wrong Adapter that happens to see an identical pattern. The extra transfer
+steps are journaled and recoverable. Verify the final recipe through both the
+Adapter and terminal before returning the pattern. Automated Lua 5.2/5.3 tests
+cover metadata disagreement, a wrong Adapter, and interrupted probe steps.
+In-game validation is still needed.
+
 ## 1.1.0 - 2026-10-26
 
 Add **Move** to the pattern detail screen. It lists other terminal-visible

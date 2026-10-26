@@ -11,13 +11,13 @@ the installer/application. It runs independently of Level Maintainer.
 
 ## Download and install
 
-[Release v1.1.0](https://github.com/dronf/AE2-Pattern-Editor/releases/tag/v1.1.0)
+[Release v1.1.1](https://github.com/dronf/AE2-Pattern-Editor/releases/tag/v1.1.1)
 contains the built, self-contained `pattern_editor.lua`, a verified installer,
 and an offline OC ZIP. On your OpenOS computer:
 
 ```sh
 cd /home
-wget -f https://raw.githubusercontent.com/dronf/AE2-Pattern-Editor/v1.1.0/installer.lua ape-install.lua
+wget -f https://raw.githubusercontent.com/dronf/AE2-Pattern-Editor/v1.1.1/installer.lua ape-install.lua
 ape-install
 pattern_editor --demo
 ```
@@ -55,12 +55,14 @@ API/bytecode compatibility checked with **OpenComputers 1.12.64-GTNH** and
 Interface Terminal each need an adjacent OC Adapter connected to the computer.
 The editing interface must be on the same AE network as the source patterns.
 
-**An adapter mismatch has still been observed in-world with v1.0.6.** v1.1.0
-adds a short retry and identifies whether the Adapter sees an empty slot,
-a different recipe or different encoded-pattern metadata. It does not bypass
-the protective stop. Move transfers through the Interface Terminal without
-invoking the editing Adapter. Start with a disposable processing pattern and follow
-the [in-game checklist](docs/VERIFICATION.md).
+**In-world Apply stopped in v1.1.0 when the terminal and Adapter reported
+different outer metadata for the same recipe.** v1.1.1 checks the physical
+connection before editing: it moves the pattern back to its source, observes
+the Adapter slot clear, then moves it back and observes the pattern reappear.
+An Adapter pointed at another interface still stops before any write. This
+new path is tested in simulation but has not yet been verified in Minecraft.
+Start with a disposable processing pattern and follow the
+[in-game checklist](docs/VERIFICATION.md).
 
 Crafting-grid patterns are viewable but read-only. Normal item and untagged
 fluid processing ingredients are editable. Item NBT must be exposed by OC
