@@ -169,6 +169,29 @@ function M.run(check,fails,memoryStore)
     ctrl=false
     check(phase==#case.events and state.mode=='main',case.name..' must exit cleanly')
   end
+  -- Normal mode uses the same keyboard UI, but reaches it through saved
+  -- component addresses and the real connection/scan path.
+  do
+    local d=require('ape.demo').new()
+    local store=memoryStore()
+    store.save('settings',{terminal='terminal',editor='editor',station=d.station})
+    local component={proxy=function(address)
+      if address=='terminal' then return d.terminal end
+      if address=='editor' then return d.editor end
+      error('Unexpected component '..tostring(address))
+    end}
+    local events={kd(keys.tab),kd(keys.enter),kd(keys.q,113)}
+    local phase,nextEvent=0,nil
+    local event={pull=function() local e=assert(nextEvent,'Missing normal-mode key'); nextEvent=nil; return table.unpack(e) end}
+    local state=require('ape.app').run({gpu=screen(50,16),event=event,keyboard=keyboard,
+      unicode=unicode,component=component,store=store,onDraw=function(s)
+        phase=phase+1
+        check(s.mode=='main' and s.error==nil,'Normal-mode keyboard path must stay on main screen')
+        if phase==3 then check(#s.results==4,'Enter on Scan must read attached interface patterns') end
+        nextEvent=assert(events[phase],'Extra normal-mode draw')
+      end})
+    check(phase==3 and state.mode=='main','Normal-mode keyboard path must exit cleanly')
+  end
   -- Public helpers for other regression suites.
   M.screen=screen; M.unicode=unicode; M.keyboard=keyboard
 end
