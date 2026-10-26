@@ -50,9 +50,15 @@ function M.new()
     local a,b=find(from),find(to)
     if not a or not b then return false,'Machine not found' end
     if not a.patterns[from.slot] then return false,'No source pattern' end
-    if b.patterns[to.slot] then return false,'Target occupied' end
-    b.patterns[to.slot]=a.patterns[from.slot]; a.patterns[from.slot]=nil
-    return true,to.slot
+    local slot=to.slot
+    if slot==-1 then
+      for i=0,8 do if not b.patterns[i] then slot=i; break end end
+      if slot==-1 then return false,'No empty slot in target machine' end
+    end
+    if slot<0 or slot>8 then return false,'Target slot out of bounds' end
+    if b.patterns[slot] then return false,'Target occupied' end
+    b.patterns[slot]=a.patterns[from.slot]; a.patterns[from.slot]=nil
+    return true,slot
   end
   local editor={}
   function editor.getInterfacePattern(slot)

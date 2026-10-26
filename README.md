@@ -11,13 +11,13 @@ the installer/application. It runs independently of Level Maintainer.
 
 ## Download and install
 
-[Release v1.0.6](https://github.com/dronf/AE2-Pattern-Editor/releases/tag/v1.0.6)
+[Release v1.1.0](https://github.com/dronf/AE2-Pattern-Editor/releases/tag/v1.1.0)
 contains the built, self-contained `pattern_editor.lua`, a verified installer,
 and an offline OC ZIP. On your OpenOS computer:
 
 ```sh
 cd /home
-wget -f https://raw.githubusercontent.com/dronf/AE2-Pattern-Editor/v1.0.6/installer.lua ape-install.lua
+wget -f https://raw.githubusercontent.com/dronf/AE2-Pattern-Editor/v1.1.0/installer.lua ape-install.lua
 ape-install
 pattern_editor --demo
 ```
@@ -37,6 +37,8 @@ Do not update the application during a pending pattern transaction.
 - **x2 / /2** scale consumed inputs and outputs together. Division requires
   whole quantities; zero-quantity catalysts remain zero.
 - Preview before Apply. Draft changes do not move or modify the live pattern.
+- Move a saved pattern to another terminal-visible interface's first free slot,
+  including crafting-grid patterns. A recovery journal protects interrupted moves.
 - Move the physical pattern into a normal adapter-connected interface, modify
   it, verify it, and return it to the original interface and slot.
 - Persist an original snapshot and a write-ahead recovery journal. Interrupted
@@ -53,11 +55,12 @@ API/bytecode compatibility checked with **OpenComputers 1.12.64-GTNH** and
 Interface Terminal each need an adjacent OC Adapter connected to the computer.
 The editing interface must be on the same AE network as the source patterns.
 
-**v1.0.6 addresses a protective stop after moving a pattern by excluding
-interface-part adapters from Setup and comparing the terminal and adapter
-views of the destination. Live pattern editing remains to be verified.**
-Start with a
-disposable processing pattern and follow the [in-game checklist](docs/VERIFICATION.md).
+**An adapter mismatch has still been observed in-world with v1.0.6.** v1.1.0
+adds a short retry and identifies whether the Adapter sees an empty slot,
+a different recipe or different encoded-pattern metadata. It does not bypass
+the protective stop. Move transfers through the Interface Terminal without
+invoking the editing Adapter. Start with a disposable processing pattern and follow
+the [in-game checklist](docs/VERIFICATION.md).
 
 Crafting-grid patterns are viewable but read-only. Normal item and untagged
 fluid processing ingredients are editable. Item NBT must be exposed by OC
@@ -73,7 +76,7 @@ the application does not cancel jobs automatically.
 | Guide | Contents |
 | --- | --- |
 | [Installation](docs/INSTALLATION.md) | Physical connections, Setup, updates and offline installation |
-| [Usage](docs/USAGE.md) | Search, add/remove/replace, quantities, multipliers and controls |
+| [Usage](docs/USAGE.md) | Search, edit, relocate patterns, quantities, multipliers and controls |
 | [Recovery](docs/RECOVERY.md) | Interrupted writes, occupied slots, missing chunks and journal files |
 | [Verification](docs/VERIFICATION.md) | Automated coverage, actual dependency checks and in-game checklist |
 | [Development](docs/DEVELOPMENT.md) | Source, test/build commands and API contracts |

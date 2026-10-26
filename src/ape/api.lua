@@ -19,6 +19,7 @@ function M.samePlace(a,b)
 end
 function M.new(terminal,editor,station,yieldFn)
   local api={terminal=terminal,editor=editor,station=station}
+  function api.wait(seconds) if yieldFn then yieldFn(seconds) end end
   local function each(iterator,fn)
     local n=0
     while true do
@@ -74,11 +75,26 @@ function M.new(terminal,editor,station,yieldFn)
     assert(found, 'Interface unavailable; check power, channels, chunks and terminal visibility')
     return raw
   end
+  function api.patternsAt(ep)
+    local found,patterns=false,nil
+    each(terminal.getInterfacesByLocation(ep.location,ep.side),function(info)
+      if M.samePlace(endpoint(info),ep) then
+        assert(not found, 'Ambiguous interface location')
+        found=true; patterns=info.patterns or {}
+      end
+    end)
+    assert(found, 'Interface unavailable; check power, channels, chunks and terminal visibility')
+    return patterns
+  end
   function api.stageRead() return editor.getInterfacePattern(station.slot+1) end
   function api.move(from,to)
     local ok,slot=terminal.send(from,to)
     assert(ok==true, 'Pattern transfer failed: '..tostring(slot))
-    assert(slot==to.slot, 'Transfer returned an unexpected destination slot')
+    if to.slot==-1 then
+      assert(type(slot)=='number' and slot>=0 and slot%1==0,
+        'Transfer returned an invalid destination slot')
+    else assert(slot==to.slot, 'Transfer returned an unexpected destination slot') end
+    return slot
   end
   function api.write(side,index,value)
     local method=side=='inputs' and editor.setInterfacePatternInput or editor.setInterfacePatternOutput

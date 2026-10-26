@@ -7,6 +7,46 @@ local function same(raw,p) return raw and signature(raw)==Model.signature(p) end
 function M.new(api,store)
   local self={}
   local function save(j) store.save('transaction',j) end
+  local function moveMatch(j,patterns)
+    local matches={}
+    for slot,raw in pairs(patterns) do
+      if type(slot)=='number' and type(raw)=='table' and not j.occupied[slot] and
+        (not j.movedSlot or slot==j.movedSlot) and
+        Model.fingerprint(raw)==j.sourceFingerprint then
+        matches[#matches+1]=slot
+      end
+    end
+    assert(#matches<=1,'Multiple matching new destination patterns; inspect interfaces before recovery')
+    return matches[1]
+  end
+  local function resumeMove(action,j)
+    local source=api.read(j.source)
+    local slot=moveMatch(j,api.patternsAt(j.destination))
+    assert(not (source and slot),'Pattern appears in both interfaces; preserve the journal')
+    if source then
+      assert(Model.fingerprint(source)==j.sourceFingerprint,
+        'Original pattern changed; preserve the journal')
+      if j.state=='returning' or action=='restore' then
+        store.finish(j); return j.source
+      end
+      local target=C.copy(j.destination); target.slot=-1
+      j.movedSlot=api.move(j.source,target)
+      j.state='moved'; save(j)
+      return resumeMove(action,j)
+    end
+    assert(slot,'Pattern missing from both interfaces; preserve the journal')
+    local target=C.copy(j.destination); target.slot=slot
+    if action=='restore' then
+      j.state='returning'; save(j)
+      api.move(target,j.source)
+      local returned=api.read(j.source)
+      assert(returned and Model.fingerprint(returned)==j.sourceFingerprint and
+        api.read(target)==nil,'Return verification failed; preserve the journal')
+      store.finish(j); return j.source
+    end
+    j.movedSlot=slot; j.state='moved'; save(j)
+    store.finish(j); return target
+  end
   local function allowed(j,raw)
     local s=signature(raw)
     local layout=raw and Model.pattern(raw).layout
@@ -48,6 +88,26 @@ function M.new(api,store)
     local j=store.pending()
     if j and j.state~='done' then return j end
   end
+  function self.relocate(record,destination)
+    assert(not self.pending(), 'Resolve the previous transaction first')
+    assert(not require('ape.api').samePlace(record.endpoint,destination),
+      'Choose a different interface')
+    assert(not require('ape.api').samePlace(api.station,destination),
+      'The editing station cannot be a destination')
+    local raw=assert(api.read(record.endpoint),'Original pattern is missing')
+    assert(Model.fingerprint(raw)==Model.fingerprint(record.raw),
+      'Pattern changed since opening; rescan first')
+    local occupied={}
+    for slot,pattern in pairs(api.patternsAt(destination)) do
+      if type(slot)=='number' and type(pattern)=='table' then occupied[slot]=true end
+    end
+    local j={version=1,kind='move',state='prepared',source=C.copy(record.endpoint),
+      destination=C.copy(destination),occupied=occupied,
+      sourceFingerprint=Model.fingerprint(raw),original=Model.pattern(raw)}
+    j.destination.slot=-1
+    store.save('last-move',j); save(j)
+    return resumeMove('finish',j)
+  end
   function self.apply(record,draft)
     assert(not self.pending(), 'Resolve the previous transaction first')
     Model.validate(record.pattern); Model.validate(draft)
@@ -72,14 +132,27 @@ function M.new(api,store)
     j.state='staged'; save(j)
     local remote=assert(api.read(j.station),'Transferred pattern is not visible in the selected editing interface')
     assert(same(remote,j.original),'Transferred pattern changed unexpectedly; use Restore original')
-    local staged=api.stageRead()
-    assert(staged and Model.fingerprint(staged)==Model.fingerprint(remote),
-      'Adapter does not point to the selected editing interface; use Restore original')
+    local staged
+    for attempt=1,3 do
+      staged=api.stageRead()
+      if staged and Model.fingerprint(staged)==Model.fingerprint(remote) then break end
+      if attempt<3 then api.wait(0.1) end
+    end
+    if not staged then
+      error('Editing Adapter sees an empty slot after transfer; use Restore original, then check Adapter selection')
+    end
+    if Model.fingerprint(staged)~=Model.fingerprint(remote) then
+      if signature(staged)==signature(remote) then
+        error('Adapter sees the same recipe but different encoded-pattern metadata; use Restore original')
+      end
+      error('Adapter sees a different recipe than the selected editing interface; use Restore original')
+    end
     return self.resume('finish')
   end
   function self.resume(action)
     assert(action=='finish' or action=='restore', 'Choose finish or restore')
     local j=assert(self.pending(), 'No interrupted transaction')
+    if j.kind=='move' then return resumeMove(action,j) end
     assert(C.equal(j.station,api.station), 'Reconnect the original editing station before recovery')
     local source=api.read(j.source)
     local remoteStage=api.read(j.station)

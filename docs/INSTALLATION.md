@@ -55,18 +55,18 @@ An Internet Card is needed for this download, not normal use:
 
 ```sh
 cd /home
-wget -f https://raw.githubusercontent.com/dronf/AE2-Pattern-Editor/v1.0.6/installer.lua ape-install.lua
+wget -f https://raw.githubusercontent.com/dronf/AE2-Pattern-Editor/v1.1.0/installer.lua ape-install.lua
 ape-install
 ```
 
-The installer fetches the pinned v1.0.6 release application, verifies it, then
+The installer fetches the pinned v1.1.0 release application, verifies it, then
 installs `/home/pattern_editor.lua`. The previous file is retained as
 `pattern_editor.lua.previous`. Run `pattern_editor --demo` to inspect the UI
 without accessing real AE components. Demo data lives separately.
 
 If an older version crashes with `getRunningProgram` nil or
 `Index 51 out of bounds for length 51`, or the demo cannot select Quit with
-the keyboard, reinstall using the v1.0.6 command above. Run
+the keyboard, reinstall using the v1.1.0 command above. Run
 `pattern_editor --demo` first, then `pattern_editor` for
 real Setup. An Adapter beside the Interface Terminal's cable does not make a
 visible AE cable join; check detection at the OpenOS `lua>` prompt with the
@@ -77,9 +77,12 @@ full-block interface's side as `UNKNOWN`, which older versions rejected.
 If v1.0.4 instead stops with `not enough memory` during Scan, update to
 v1.0.5 and install more OC RAM if needed. The scan now retains only a compact
 search index; opening a result reads that pattern's full data on demand.
-If v1.0.5 stopped after moving a pattern with an adapter mismatch error, use
-**Restore original** before updating. v1.0.6 excludes part-interface adapters
-from Setup and checks the terminal and adapter views of the destination.
+If Apply stops after moving a pattern with an adapter mismatch error, use
+**Back > Restore original** before updating. v1.1.0 still stops before editing
+if the Adapter does not show the same pattern as the terminal; it now retries a
+briefly stale read and reports which kind of mismatch remains. v1.0.6 has also
+stopped at this check in-world, so do not assume the earlier fix resolved every
+hardware or API mismatch.
 
 For offline installation, download and extract the release's OC ZIP on your
 PC, then copy `pattern_editor.lua` onto the OC hard drive using your available
@@ -103,10 +106,30 @@ or source directory is needed on the OC computer.
 4. Select **Scan**, then test on a disposable processing pattern first.
 5. Open a result, make a draft change, Preview, and Apply. Check the original
    interface to confirm the pattern returned and the editing slot is empty.
+6. To relocate an unchanged pattern, open it and choose **Move**. Select the
+   destination by name and coordinates; the terminal chooses its first free
+   pattern slot. Unsaved draft edits must be applied or discarded first.
 
 Setup checks both slots are empty. After the first transfer it also compares
 the remote and adapter-visible pattern before writing. A mismatch retains the
 journal and offers Restore original; it does not blindly edit another interface.
+
+If Apply still reports an Adapter mismatch, choose **Back > Restore original**.
+Naming the interface proves which row you selected from the terminal, but not
+which OC component address belongs to the Adapter physically touching it. To
+identify that address, close the editor, place one disposable encoded pattern
+in slot 1 of the named editing interface, and run this one line in OpenOS:
+
+```sh
+lua -e 'local c=require("component"); for a in c.list("me_interface",true) do local p=c.proxy(a); local ok,v=pcall(p.getInterfacePattern,1); print(a,ok and v and (v.label or v.name) or "-") end'
+```
+
+The address displaying `Encoded Pattern` is the editing Adapter component.
+Remove the test pattern, leave the station empty, rerun Setup and choose that
+address before selecting the named terminal interface. If no address sees the
+pattern, check that the Adapter touches the full-block interface and connects
+to the OC cable network. If the address is correct but Apply still stops,
+report the specific v1.1.0 mismatch message; do not bypass its safety check.
 
 ## Updates and removal
 

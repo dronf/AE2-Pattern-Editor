@@ -59,6 +59,9 @@ python tools/verify_api.py --mods /path/to/instance/mods --output docs/api-verif
   full-block editor. The optional-slot callback on a block accepts no arguments.
 - Terminal `send(source,target)` moves a physical encoded pattern. It refuses
   an occupied destination. The source/target include location, side and slot.
+  A target slot of `-1` asks the terminal to choose its first free slot and
+  return that zero-based slot. Move journals the destination occupancy before
+  calling `send`, so a crash before the returned slot is recorded is recoverable.
 - Ingredient setters accept `(patternSlot,index,detail,type)`, where type is
   `item` or `fluid`. `detail.size` supplies the AE amount; native fluids also need
   `detail.amount`. Omitting detail removes an entry and **shifts native indices**.

@@ -1,8 +1,24 @@
 # Changelog
 
+## 1.1.0 - 2026-10-26
+
+Add **Move** to the pattern detail screen. It lists other terminal-visible
+interfaces, confirms the choice and sends the unchanged physical pattern to
+the first free pattern slot. The terminal reports the actual destination slot.
+An occupied or full destination is never overwritten. A separate write-ahead
+move journal allows Finish or Restore original after interruption, including a
+crash between physical transfer and recording its returned slot. Crafting-grid
+patterns may be moved without enabling ingredient editing. Unsaved draft edits
+must be applied or discarded first.
+
+The protective editing-Adapter comparison now retries a briefly stale read
+and reports whether it sees an empty slot, a different recipe or matching
+recipe with different pattern metadata. In-world reports show v1.0.6 could
+still stop at this check; v1.1.0 retains the stop until binding is established.
+
 ## 1.0.6 - 2026-10-26
 
-Fix a protective adapter-mismatch stop seen after a pattern was moved. Setup
+Address two potential causes of an adapter-mismatch stop. Setup
 now excludes AE interface-part OC components, which share `me_interface` with
 full blocks but require different callback arguments. After moving a pattern,
 the editor compares the terminal and adapter reads of the destination rather

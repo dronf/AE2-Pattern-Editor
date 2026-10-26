@@ -141,6 +141,53 @@ function M.run(check,fails,memoryStore)
       end})
     check(phase==#actions and seen.picker and seen.preview and seen.confirm)
   end
+  -- Move is available from the edit screen, refuses to discard a changed
+  -- draft, then relocates the physical pattern to the first free destination slot.
+  for _,size in ipairs({{50,16},{80,25},{160,50}}) do
+    gpu=screen(size[1],size[2]); local h=size[2]
+    local d=require('ape.demo').new()
+    local store=memoryStore()
+    local phase,nextEvent=0,nil
+    local function touch(x,y) return {'touch','screen',x,y,0,'player'} end
+    local function kd(code,ch) return {'key_down','keyboard',ch or 0,code} end
+    local actions={
+      {'main',function() return touch(2,2) end},
+      {'main',function(s)
+        local index
+        for i,r in ipairs(s.results) do if r.name=='Assembly Line' and r.endpoint.slot==0 then index=i end end
+        check(index~=nil); return touch(2,6+index-1)
+      end},
+      {'main',function() return kd(keys.enter) end},
+      {'edit',function() return touch(7,h-2) end},
+      {'edit',function() return touch(22,h-2) end},
+      {'edit',function(s)
+        check(s.status:find('unsaved draft',1,true),'Move must explain why a changed draft is blocked')
+        return touch(2,h-2)
+      end},
+      {'edit',function() return touch(22,h-2) end},
+      {'choose',function(s)
+        check(#s.choice.items==1 and s.choice.items[1].label:find('Bender',1,true),
+          'Move must list terminal-visible destinations except source and editing station')
+        return touch(2,h-1)
+      end},
+      {'confirm',function() return touch(2,7) end},
+      {'main',function(s)
+        check(d.inventories[2].patterns[0]==nil and d.inventories[3].patterns[2] and
+          not (store.pending() and store.pending().state~='done'),
+          'Move must clear source and close the journal after destination verification')
+        check(s.status:find('slot 3',1,true),'Move must report the actual chosen slot')
+        return touch(24,2)
+      end}}
+    local event={pull=function() local e=assert(nextEvent,'Missing move event'); nextEvent=nil; return table.unpack(e) end}
+    local state=require('ape.app').run({gpu=gpu,event=event,keyboard=keyboard,unicode=unicode,
+      component={},store=store,demo=d,onDraw=function(s)
+        phase=phase+1
+        local action=assert(actions[phase],'Move journey did not quit')
+        check(s.mode==action[1],'Move phase '..phase..' expected '..action[1]..', got '..s.mode..': '..tostring(s.error))
+        nextEvent=action[2](s)
+      end})
+    check(phase==#actions and state.mode=='main','Move UI must work at each screen size')
+  end
   -- Main-screen keyboard operation and OpenOS interruption must exit cleanly.
   local function kd(code,ch) return {'key_down','keyboard',ch or 0,code} end
   local cases={

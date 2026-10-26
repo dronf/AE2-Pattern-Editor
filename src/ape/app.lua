@@ -1,7 +1,7 @@
 local C=require('ape.codec')
 local Model=require('ape.model')
 local Api=require('ape.api')
-local M={VERSION='1.0.6'}
+local M={VERSION='1.1.0'}
 function M.run(options)
   options=options or {}
   local component=options.component or require('component')
@@ -40,7 +40,7 @@ function M.run(options)
       for _,method in ipairs({'getInterfacePattern','setInterfacePatternInput','setInterfacePatternOutput','getItemsInNetwork'}) do
         assert(editor[method],'Editing interface missing '..method)
       end
-      api=Api.new(terminal,editor,config.station,function() os.sleep(0) end)
+      api=Api.new(terminal,editor,config.station,function(seconds) os.sleep(seconds or 0) end)
     end
     tx=require('ape.transaction').new(api,store)
   end
@@ -200,6 +200,35 @@ function M.run(options)
     state.record=nil; state.listRecord=nil; state.original=nil; state.draft=nil
     filter(); catalog=nil; mode('main'); status('Saved and verified at original interface/slot')
   end
+  local function movePattern()
+    if Model.signature(state.original)~=Model.signature(state.draft) then
+      status('Apply or discard the unsaved draft before moving the pattern'); return
+    end
+    progress('Reading destination interfaces...')
+    local candidates={}
+    for _,info in ipairs(api.interfaces()) do
+      if not Api.samePlace(info.endpoint,state.record.endpoint) and
+        not Api.samePlace(info.endpoint,api.station) then
+        local l=info.endpoint.location
+        candidates[#candidates+1]={value=info,label=l.x..','..l.y..','..l.z..
+          ' side '..info.endpoint.side..' | '..info.name}
+      end
+    end
+    assert(#candidates>0,'No other terminal-visible interface is available')
+    choose('Move the physical pattern to another interface',candidates,function(selected)
+      local destination=selected.value
+      state.confirm={text='Move to '..destination.name..' (first empty slot)?',
+        yes=function()
+          progress('Moving pattern and verifying destination...')
+          local endpoint=tx.relocate(state.record,destination.endpoint)
+          state.records={}; filter(); catalog=nil
+          state.record=nil; state.listRecord=nil; state.original=nil; state.draft=nil
+          mode('main'); status('Moved to '..destination.name..' slot '..(endpoint.slot+1)..'. Press Scan to refresh.')
+        end,
+        no=function() mode('choose') end}
+      mode('confirm')
+    end,function() mode('edit') end)
+  end
   local function resume(action)
     assert(tx,'Reconnect the original adapters before recovery')
     progress('Recovering interrupted transaction...')
@@ -231,6 +260,8 @@ function M.run(options)
     'x2 and /2 scale every positive input/output; zero catalysts stay zero.',
     '/2 refuses fractional amounts. Quantities are limited to 2147483647.',
     'Preview shows changes; Apply moves, edits, verifies and returns.',
+    'Move relocates the unchanged physical pattern to another interface.',
+    'Apply or discard draft changes before Move. Destination uses its first free slot.',
     'Stop affected crafting jobs before applying a recipe change.',
     'Do not put machines/storage requests on the editing interface.',
     'Tagged identities require OC allowItemStackNBTTags=true.',
@@ -282,6 +313,7 @@ function M.run(options)
       x=ui.button(1,h-2,'/2',function() scale(0.5) end,yes)
       x=ui.button(x,h-2,'x2',function() scale(2) end,yes)
       x=ui.button(x,h-2,'Preview',preview,yes)
+      x=ui.button(x,h-2,'Move',movePattern)
       ui.button(x,h-2,'Back',backEdit)
     elseif state.mode=='amount' then
       ui.text(1,3,'Amount for '..selectedStack().label)
@@ -317,9 +349,15 @@ function M.run(options)
       local x=ui.button(1,7,'Confirm',function() state.confirm.yes() end)
       ui.button(x,7,'Cancel',function() state.confirm.no() end)
     elseif state.mode=='recovery' then
-      ui.text(1,3,'An interrupted save needs attention. Other edits are locked.',0xffcc66)
-      ui.text(1,5,'Finish applies the saved draft and returns the pattern.')
-      ui.text(1,6,'Restore original reverses edits and returns the pattern.')
+      local pending=store.pending()
+      ui.text(1,3,'An interrupted operation needs attention. Other edits are locked.',0xffcc66)
+      if pending and pending.kind=='move' then
+        ui.text(1,5,'Finish completes the move to the destination interface.')
+        ui.text(1,6,'Restore original returns the pattern to its source slot.')
+      else
+        ui.text(1,5,'Finish applies the saved draft and returns the pattern.')
+        ui.text(1,6,'Restore original reverses edits and returns the pattern.')
+      end
       ui.text(1,8,'Keep the original interfaces, adapters and chunks available.')
       local x=ui.button(1,11,'Finish',function() resume('finish') end,tx~=nil)
       x=ui.button(x,11,'Restore original',function() resume('restore') end,tx~=nil)

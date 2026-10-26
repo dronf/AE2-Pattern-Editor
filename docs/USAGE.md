@@ -33,6 +33,7 @@ mouse or arrow keys:
 | x2 | Double every positive input and output amount |
 | /2 | Halve every positive amount only when all results are positive whole numbers |
 | Preview | Validate and show the before/after changes |
+| Move | Relocate the saved physical pattern to another interface; available for grid patterns too |
 | Back | Leave, with a discard confirmation if the draft changed |
 
 Add/Replace searches ingredients already found in scanned patterns plus currently
@@ -73,6 +74,26 @@ rewritten by the editing callbacks.
 
 If interrupted, read [Recovery](RECOVERY.md). A logical recovery journal is not
 a duplicate encoded pattern item and cannot create a missing physical pattern.
+
+## Move a pattern to another interface
+
+Open the pattern and click **Move**. If you changed any ingredients or amounts
+in the draft, use Preview > Apply first, or Back and discard the draft; Move
+never silently applies or discards draft edits. Select a different
+terminal-visible interface by its name, coordinates and side, then confirm.
+The dedicated editing station and the pattern's current interface are excluded.
+
+The ME Interface Terminal moves the existing encoded pattern directly into the
+destination's **first empty pattern slot**. Move does not use the editing Adapter
+or change any ingredient. The program reads back the destination, reports its
+actual slot number (shown one-based), and asks you to Scan again. It refuses a
+full destination rather than replacing an existing pattern. Grid patterns can
+be moved even though their recipes cannot be edited here.
+
+Stop affected crafting jobs and keep both interfaces powered, visible in the
+terminal and loaded during the move. If the operation stops, **Finish** completes
+the move and **Restore original** returns the physical pattern to its source
+slot. Do not manually move it while its recovery journal is pending.
 
 ## Keyboard, mouse and screen size
 

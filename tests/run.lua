@@ -102,6 +102,17 @@ end
 tx.apply(r,Model.scale(r.pattern,2))
 check(not tx.pending() and api.stageRead()==nil and api.read(r.endpoint).tag=='repacked-pattern-metadata',
   'A valid destination must not be rejected because its outer metadata changed on transfer')
+-- Allow a briefly stale local Adapter read after the terminal reports a move.
+d,api,store,tx,r=fixture()
+local immediateStageRead=api.stageRead
+local stageReads=0
+api.stageRead=function()
+  stageReads=stageReads+1
+  if stageReads==2 or stageReads==3 then return nil end
+  return immediateStageRead()
+end
+tx.apply(r,Model.scale(r.pattern,2))
+check(stageReads>=4 and not tx.pending(),'A delayed Adapter view should be retried before stopping')
 -- Processing patterns can contain empty native NBT slots. Logical rows must target
 -- their real physical indices, and deletion shifts subsequent native positions.
 d,api,store,tx,r=fixture()
@@ -183,6 +194,77 @@ for actionIndex=1,80 do
   end
 end
 check(crashCases>50,'Fault injection did not exercise enough boundaries')
+-- Relocation uses the terminal's first-empty-slot transfer, without touching
+-- the adapter-connected editing station or overwriting destination patterns.
+d,api,store,tx,r=fixture()
+local destination={location=C.copy(d.inventories[3].location),side=6,slot=-1}
+local moved=tx.relocate(r,destination)
+check(moved.slot==2 and api.read(r.endpoint)==nil and not tx.pending(),
+  'Move should choose the first empty destination slot and close its journal')
+check(Model.fingerprint(api.read(moved))==Model.fingerprint(r.raw) and
+  d.inventories[3].patterns[0] and d.inventories[3].patterns[1] and api.stageRead()==nil,
+  'Move must preserve the complete physical pattern and existing destination slots')
+-- A crafting-grid pattern can be relocated even though its ingredients are read-only.
+d,api,store,tx,r=fixture()
+local grid={location=C.copy(d.inventories[3].location),side=6,slot=1}
+local gridRaw=api.read(grid)
+local gridRecord={endpoint=grid,raw=gridRaw,pattern=Model.pattern(gridRaw)}
+local partDestination={location=C.copy(d.inventories[2].location),side=2,slot=-1}
+local gridMoved=tx.relocate(gridRecord,partDestination)
+check(gridMoved.slot==1 and api.read(grid)==nil and api.read(gridMoved).isCraftable,
+  'Move should support terminal-visible part interfaces and grid patterns')
+-- Stale source and a full destination cannot silently replace any pattern.
+d,api,store,tx,r=fixture()
+destination={location=C.copy(d.inventories[3].location),side=6,slot=-1}
+d.inventories[2].patterns[0].tag='changed'
+fails(function() tx.relocate(r,destination) end,'changed since opening')
+check(not tx.pending())
+d,api,store,tx,r=fixture()
+destination={location=C.copy(d.inventories[3].location),side=6,slot=-1}
+for slot=2,8 do d.inventories[3].patterns[slot]=C.copy(d.inventories[3].patterns[0]) end
+fails(function() tx.relocate(r,destination) end,'No empty slot')
+check(tx.pending() and api.read(r.endpoint)~=nil)
+tx.resume('restore')
+check(not tx.pending() and api.read(r.endpoint)~=nil)
+-- Recover a relocation interrupted before or after any journal or transfer step.
+local moveCrashCases=0
+for actionIndex=1,15 do
+  for _,when in ipairs({'before','after'}) do
+    for _,recoveryAction in ipairs({'finish','restore'}) do
+      local dd,aa,ss,tt,rr=fixture()
+      local target={location=C.copy(dd.inventories[3].location),side=6,slot=-1}
+      local operation=0
+      local function wrap(obj,name)
+        local fn=obj[name]
+        obj[name]=function(...)
+          operation=operation+1
+          local hit=operation==actionIndex
+          if hit and when=='before' then error('Power loss') end
+          local result={fn(...)}
+          if hit and when=='after' then error('Power loss') end
+          return table.unpack(result)
+        end
+        return function() obj[name]=fn end
+      end
+      local resets={wrap(ss,'save'),wrap(aa,'move'),wrap(ss,'finish')}
+      local ok=pcall(function() tt.relocate(rr,target) end)
+      for _,reset in ipairs(resets) do reset() end
+      if not ok then
+        moveCrashCases=moveCrashCases+1
+        local resumed=Tx.new(aa,ss)
+        if resumed.pending() then resumed.resume(recoveryAction) end
+        check(not resumed.pending())
+        local atSource=aa.read(rr.endpoint)~=nil
+        local atDestination=dd.inventories[3].patterns[2]~=nil
+        check(atSource~=atDestination and aa.stageRead()==nil,
+          'Recovery must leave one pattern, in its source or destination')
+        check(dd.inventories[3].patterns[0] and dd.inventories[3].patterns[1],
+          'Recovery must not overwrite existing destination patterns')
+      elseif operation<actionIndex then break end
+    end
+  end
+end
+check(moveCrashCases>=10,'Move fault injection missed transaction boundaries')
 -- Removing an entry must compact correctly, including appended replacements.
 d,api,store,tx,r=fixture()
 local draft=C.copy(r.pattern)
@@ -206,10 +288,23 @@ check(tx.pending()~=nil)
 d,api,store,tx,r=fixture()
 local actual=api.stageRead
 api.stageRead=function() return nil end
-fails(function() tx.apply(r,twice) end)
+fails(function() tx.apply(r,twice) end,'empty slot after transfer')
 tx.resume('restore')
 api.stageRead=actual
 check(api.read(r.endpoint)~=nil and not tx.pending())
+-- A post-move metadata mismatch is reported separately from a wrong recipe.
+d,api,store,tx,r=fixture()
+local actualMetadata=api.stageRead
+local metadataReads=0
+api.stageRead=function()
+  metadataReads=metadataReads+1
+  local current=actualMetadata()
+  if metadataReads>1 and current then current.tag='different-outer-metadata' end
+  return current
+end
+fails(function() tx.apply(r,twice) end,'same recipe but different encoded-pattern metadata')
+tx.resume('restore')
+check(not tx.pending() and api.read(r.endpoint)~=nil)
 -- Restore must still return an unchanged remote pattern if the unrelated or
 -- disconnected adapter throws when its local slot is read.
 d,api,store,tx,r=fixture()
@@ -227,4 +322,4 @@ check(not tx.pending() and api.read(r.endpoint)~=nil and api.stageRead()==nil)
 -- Headless screen, keyboard and real application journeys.
 require('persistence_tests').run(check,fails)
 require('ui_tests').run(check,fails,memoryStore)
-print('PASS: '..total..' checks; '..crashCases..' injected interruption/recovery cases')
+print('PASS: '..total..' checks; '..crashCases..' edit and '..moveCrashCases..' move recovery cases')

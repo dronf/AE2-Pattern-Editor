@@ -7,6 +7,11 @@ pattern and before each edit. If an operation fails or OC is interrupted, other
 edits are locked. On restart it inspects the actual source/editing inventories
 instead of assuming the last journal phase completed.
 
+For **Move**, the journal also records which destination slots were occupied
+before transfer. If interruption occurs before the terminal's chosen slot is
+recorded, recovery finds the one newly occupied slot with the original pattern
+fingerprint. Ambiguous or missing results stop for manual inspection.
+
 ## Normal recovery
 
 Keep both interfaces/adapters connected, their AE network powered and their
@@ -15,6 +20,14 @@ chunks loaded. Restart `pattern_editor`:
 - **Finish** completes the saved draft and returns the pattern.
 - **Restore original** reverses draft edits and returns the original contents.
 - **Quit** leaves the pattern and journal where they are for later recovery.
+
+For a pending **Move**, Finish completes relocation to the selected interface;
+Restore original sends the unchanged physical pattern back to its exact source
+slot. A full destination causes a safe stop with the source still present;
+Restore original clears that pending move. Keep both interfaces powered and
+terminal-visible until recovery completes. The editing Adapter is not used by
+Move, but this version of the application still requires its saved Setup to
+connect at startup.
 
 Do not put another pattern in the original slot. If it is occupied, recovery
 stops instead of overwriting it. Remove the unrelated occupant yourself, leaving
@@ -53,6 +66,7 @@ Normal operation uses `/home/.ae2-pattern-editor/`:
 | settings | Adapter component addresses and selected editing-station location |
 | transaction | Write-ahead original/draft, current/next states and recovery phase |
 | last-original | Original snapshot from the most recent attempted save |
+| last-move | Snapshot, source/destination and occupied destination slots from the most recent attempted Move |
 | *.bak | Previous generation kept during atomic replacement |
 | *.tmp | A write that did not finish being installed |
 

@@ -1,4 +1,4 @@
-# Verification for v1.0.6
+# Verification for v1.1.0
 
 [Overview](../README.md) - [Development](DEVELOPMENT.md)
 
@@ -12,8 +12,9 @@ and missing keyboard navigation in v1.0.2. The v1.0.3 in-game Setup then
 rejected a visible full-block interface. v1.0.4 reached Scan in-world, where
 the 52-interface/355-pattern network ran out of OC memory. v1.0.5 completed
 the scan and reached Apply in-world, but stopped after moving a pattern when
-the adapter check failed. v1.0.6 addresses two possible false selections and
-comparisons; its result has not yet been retested in-world.**
+the adapter check failed. v1.0.6 still stopped at the same check in-world;
+Restore original succeeded. v1.1.0 adds a short retry and a specific mismatch
+message, plus Move, but neither has yet been tested in-world.**
 Simulation is not a claim of in-world validation.
 
 ## Automated checks
@@ -35,12 +36,19 @@ Simulation is not a claim of in-world validation.
   station mutation, wrong adapter binding and exact return-slot verification.
 - Setup excludes part-interface OC components despite their shared
   `me_interface` type. Post-transfer adapter binding compares the adapter and
-  terminal views of the destination, and Restore can return an untouched
+  terminal views of the destination, retries a briefly stale local read,
+  identifies the type of mismatch, and Restore can return an untouched
   pattern even if the unrelated adapter read errors.
+- Move uses the terminal's first-free-slot `send` result, preserves existing
+  destination patterns, rejects stale sources and full destinations, and allows
+  read-only crafting-grid patterns to be relocated. Before/after interruption
+  injection covers the move journal and physical transfer, including a crash
+  before the chosen slot is recorded. Finish and Restore each leave one pattern.
 - Exhaustive before/after interruption injection at journal saves, movements,
   writes and completion boundaries, followed by Finish or Restore recovery.
 - Full mouse/keyboard application journeys at 50x16, 80x25 and 160x50: scan,
-  select, type amounts, remove, pick/add, multiply/divide, preview, apply and quit.
+  select, type amounts, remove, pick/add, multiply/divide, preview, apply, move
+  and quit. Move refuses an unsaved draft rather than silently discarding it.
   Render calls are checked against screen bounds, including a 51-character
   demo title at 50 columns without `unicode.wtrunc`. Top-row/numpad keys,
   Backspace/Delete, cursor movement, Ctrl+A, paste and UTF-8 text are exercised.
@@ -83,7 +91,14 @@ are made that another server exposes NBT or supports these GTNH-specific methods
    and a normal fluid processing pattern. Confirm all identities and amounts.
 7. Test x2 then /2, and rejection of /2 when an amount is odd.
 8. Change a pattern outside the program after scanning; Apply must refuse it.
-9. With a disposable pattern, interrupt an in-progress save and restart. Verify
+9. Open an unchanged disposable pattern, use Move to choose another interface,
+   and confirm the reported slot and source vacancy. Scan again to find it there.
+   Repeat with a full destination and confirm no pattern was replaced.
+10. With a disposable pattern, interrupt an in-progress save and restart. Verify
    Finish and Restore separately, including an occupied original slot.
-10. Only after these checks, use it for production patterns with affected AE jobs
+11. If Apply stops at the Adapter check, use Back > Restore original, then report
+    whether v1.1.0 says the Adapter sees an empty slot, a different recipe, or
+    the same recipe with different pattern metadata. Keep the original Setup
+    and journal until recovery succeeds.
+12. Only after these checks, use it for production patterns with affected AE jobs
     stopped. Report API errors with OC/AE2 versions and retained journal files.
