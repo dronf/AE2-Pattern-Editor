@@ -1,0 +1,53 @@
+name: Publish OpenOS release
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+
+jobs:
+  publish:
+    if: github.ref_type == 'tag' || github.event.head_commit.message == 'Publish v1.0.1 release'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # v1.0.1 was tagged before this workflow existed. The one-time main
+          # branch trigger builds that immutable tag; later tags build themselves.
+          ref: ${{ github.ref_type == 'tag' && github.ref_name || 'v1.0.1' }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install lupa==2.6
+      - run: python tools/test.py
+      - run: python tools/build.py
+      - run: git diff --exit-code -- installer.lua
+      - run: python tools/check_release.py
+      - name: Create release with verified assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_type == 'tag' && github.ref_name || 'v1.0.1' }}
+        run: |
+          version="${RELEASE_TAG#v}"
+          assets=(
+            dist/pattern_editor.lua
+            dist/installer.lua
+            "dist/ae2-pattern-editor-${version}-oc.zip"
+            "dist/ae2-pattern-editor-${version}-source.zip"
+            dist/SHA256SUMS.txt
+          )
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber
+          elif test -f "docs/RELEASE-${version}.md"; then
+            gh release create "$RELEASE_TAG" "${assets[@]}" \
+              --title "AE2 Pattern Editor ${version}" \
+              --notes-file "docs/RELEASE-${version}.md" \
+              --prerelease
+          else
+            gh release create "$RELEASE_TAG" "${assets[@]}" \
+              --title "AE2 Pattern Editor ${version}" \
+              --generate-notes \
+              --prerelease
+          fi
