@@ -11,13 +11,13 @@ the installer/application. It runs independently of Level Maintainer.
 
 ## Download and install
 
-[Release v1.0.2](https://github.com/dronf/AE2-Pattern-Editor/releases/tag/v1.0.2)
+[Release v1.0.3](https://github.com/dronf/AE2-Pattern-Editor/releases/tag/v1.0.3)
 contains the built, self-contained `pattern_editor.lua`, a verified installer,
 and an offline OC ZIP. On your OpenOS computer:
 
 ```sh
 cd /home
-wget -f https://raw.githubusercontent.com/dronf/AE2-Pattern-Editor/v1.0.2/installer.lua ape-install.lua
+wget -f https://raw.githubusercontent.com/dronf/AE2-Pattern-Editor/v1.0.3/installer.lua ape-install.lua
 ape-install
 pattern_editor --demo
 ```
@@ -42,7 +42,8 @@ Do not update the application during a pending pattern transaction.
 - Persist an original snapshot and a write-ahead recovery journal. Interrupted
   saves lock other edits until **Finish** or **Restore original** succeeds.
 - Mouse, arrow/page keys, scrolling, clipboard paste, ordinary number keys,
-  numpad, Backspace/Delete, Ctrl+A and Tab. Layouts work at 50x16 and larger.
+  numpad, Backspace/Delete, Ctrl+A, Tab/Enter button navigation, Escape/Q and
+  Ctrl+C/Ctrl+D exit. Layouts work at 50x16 and larger.
 - Manual scans and catalog refreshes; no background network polling.
 
 ## Requirements and limits
@@ -53,8 +54,9 @@ Interface Terminal each need an adjacent OC Adapter connected to the computer.
 The editing interface must be on the same AE network as the source patterns.
 
 **v1.0.0 failed at launch due to an absent OpenOS shell method; v1.0.1 could
-crash while drawing its demo title on a 50-column screen. v1.0.2 fixes both
-paths, but live retesting and pattern editing remain to be verified.** Start with a
+crash while drawing its demo title on a 50-column screen; v1.0.2 lacked
+keyboard navigation and exit controls. v1.0.3 addresses these reports, but
+live retesting and pattern editing remain to be verified.** Start with a
 disposable processing pattern and follow the [in-game checklist](docs/VERIFICATION.md).
 
 Crafting-grid patterns are viewable but read-only. Normal item and untagged

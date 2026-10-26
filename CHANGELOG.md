@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.3 - 2026-10-26
+
+Make every enabled screen button reachable by Tab and activatable by Enter,
+including Scan, Help and Quit in the disconnected demo. Highlight the selected
+button. Escape/Q exits the main screen, and Ctrl+C/Ctrl+D or OpenOS's
+`interrupted` event exits cleanly from any screen while restoring the GPU.
+Add keyboard-only demo and interrupt regression tests.
+
 ## 1.0.2 - 2026-10-26
 
 Fix the OpenOS `Index 51 out of bounds for length 51` crash when drawing the

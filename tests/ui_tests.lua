@@ -21,7 +21,7 @@ function M.run(check,fails,memoryStore)
     if n<128 then return string.char(n) end
     return string.char(192+math.floor(n/64),128+n%64)
   end
-  local keys={a=30,enter=28,numpadenter=156,escape=1,tab=15,home=199,['end']=207,
+  local keys={a=30,c=46,d=32,q=16,enter=28,numpadenter=156,escape=1,tab=15,home=199,['end']=207,
     left=203,right=205,back=14,delete=211,up=200,down=208,pageUp=201,pageDown=209}
   local ctrl=false
   local keyboard={keys=keys,isControlDown=function() return ctrl end}
@@ -52,7 +52,7 @@ function M.run(check,fails,memoryStore)
   end
   local gpu=screen(50,16)
   local ui=require('ape.ui').new(gpu,{},keyboard,unicode)
-  ui.frame('AE2 Pattern Editor 1.0.2 [DEMO - no real AE access]')
+  ui.frame('AE2 Pattern Editor '..require('ape.app').VERSION..' [DEMO - no real AE access]')
   check(unicode.len(gpu.dump():match('^[^\n]+'))==50,'Long title must fit a 50-column screen')
   local field={text='1234'}
   ui.frame('Input regression')
@@ -72,6 +72,21 @@ function M.run(check,fails,memoryStore)
   ctrl=true; key(1,keys.a); ctrl=false; key(0,keys.delete)
   check(field.text=='')
   ui.dispatch({'key_down','keyboard',233,18}); check(field.text=='\195\169')
+  -- Buttons can be selected and activated without a touchscreen. Tab cycles
+  -- the enabled buttons and then returns to the first text field.
+  local activated={}
+  ui.frame('Keyboard controls')
+  ui.button(1,2,'First',function() activated[#activated+1]='first' end)
+  ui.button(10,2,'Disabled',function() activated[#activated+1]='disabled' end,false)
+  ui.button(22,2,'Second',function() activated[#activated+1]='second' end)
+  local textField={text=''}
+  ui.field(1,4,20,textField)
+  ui.blur()
+  key(0,keys.tab); key(0,keys.tab); key(0,keys.enter)
+  check(#activated==1 and activated[1]=='second','Tab/Enter activates the selected enabled button')
+  key(0,keys.tab); key(0,keys.tab); key(0,keys.tab)
+  key(65,30)
+  check(textField.text=='A','Tab reaches the text field after the buttons')
   -- Actual app: scan, find pattern, edit quantity, remove an ingredient, add via picker,
   -- multiply/divide, preview, apply, and verify physical return. Run at all OC screen tiers.
   for _,size in ipairs({{50,16},{80,25},{160,50}}) do
@@ -125,6 +140,34 @@ function M.run(check,fails,memoryStore)
         nextEvent=action[2](s)
       end})
     check(phase==#actions and seen.picker and seen.preview and seen.confirm)
+  end
+  -- Main-screen keyboard operation and OpenOS interruption must exit cleanly.
+  local function kd(code,ch) return {'key_down','keyboard',ch or 0,code} end
+  local cases={
+    {name='Tab Scan and Q',events={kd(keys.tab),kd(keys.enter),kd(keys.q,113)},scanned=true},
+    {name='Tab to Quit',events={kd(keys.tab),kd(keys.tab),kd(keys.tab),kd(keys.enter)}},
+    {name='Escape',events={kd(keys.escape)}},
+    {name='Ctrl+C',events={kd(keys.c,3)},focused=true},
+    {name='Ctrl+D',events={kd(keys.d,4)},focused=true},
+    {name='Ctrl+C key state',events={kd(keys.c)},focused=true,control=true},
+    {name='Ctrl+D key state',events={kd(keys.d)},focused=true,control=true},
+    {name='OpenOS interrupted',events={{'interrupted',0}},focused=true},
+  }
+  for _,case in ipairs(cases) do
+    local nextEvent,phase=nil,0
+    local event={pull=function() local e=assert(nextEvent,'Missing '..case.name..' event'); nextEvent=nil; return table.unpack(e) end}
+    local state=require('ape.app').run({gpu=screen(50,16),event=event,keyboard=keyboard,
+      unicode=unicode,component={},store=memoryStore(),demo=require('ape.demo').new(),
+      onDraw=function(s,appUi)
+        phase=phase+1
+        check(s.mode=='main' and s.error==nil,case.name..' should stay on the main screen')
+        if case.scanned and phase==#case.events then check(#s.results>0,'Enter on Scan must load demo patterns') end
+        if case.focused then appUi.focus(s.search) end
+        ctrl=case.control or false
+        nextEvent=assert(case.events[phase],'Extra draw in '..case.name)
+      end})
+    ctrl=false
+    check(phase==#case.events and state.mode=='main',case.name..' must exit cleanly')
   end
   -- Public helpers for other regression suites.
   M.screen=screen; M.unicode=unicode; M.keyboard=keyboard

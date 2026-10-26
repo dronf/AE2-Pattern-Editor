@@ -4,7 +4,7 @@
 
 ## Find a recipe
 
-Click **Scan**. The terminal supplies a snapshot of its supported, visible
+Click **Scan**, or press Tab then Enter. The terminal supplies a snapshot of its supported, visible
 interfaces and encoded patterns. Results include a pattern's output names and
 its containing interface. The editing station is excluded. Unsupported pattern
 stack types are counted as skipped rather than silently treated as normal items.
@@ -79,12 +79,16 @@ a duplicate encoded pattern item and cannot create a missing physical pattern.
 - Click a text field to focus it. Ordinary number keys and numpad produce one
   character per key-down event. Backspace and Delete remove characters.
 - Ctrl+A selects all; typing/pasting replaces the selection. Left/Right and
-  Home/End move the cursor. Tab moves between fields.
+  Home/End move the cursor. Tab cycles enabled buttons and text fields; the
+  selected button is highlighted, and Enter activates it.
 - Enter commits an amount or leaves Search; a second Enter opens/selects the
-  highlighted result. Esc first leaves a focused field, then goes back.
+  highlighted result. Esc first leaves a focused field, then goes back. On the
+  main screen Esc or Q quits. Ctrl+C, Ctrl+D and OpenOS interrupt quit from any
+  screen, restoring the previous GPU resolution.
 - Delete removes an ingredient only while the ingredient list has focus.
-- Arrow keys, Page Up/Down and mouse wheel navigate lists. Click buttons to
-  switch sides, preview or apply. Long lists are paginated.
+- Arrow keys, Page Up/Down and mouse wheel navigate lists. Click buttons or
+  select them with Tab/Enter to switch sides, preview or apply. Long lists are
+  paginated.
 
 At 50x16, labels/status lines may be truncated; the picker shows registry/NBT
 details as space allows. A higher-tier screen/GPU makes these easier to inspect.

@@ -1,7 +1,7 @@
 local C=require('ape.codec')
 local Model=require('ape.model')
 local Api=require('ape.api')
-local M={VERSION='1.0.2'}
+local M={VERSION='1.0.3'}
 function M.run(options)
   options=options or {}
   local component=options.component or require('component')
@@ -212,9 +212,11 @@ function M.run(options)
     'Tagged identities require OC allowItemStackNBTTags=true.',
     'Crafting-grid patterns are read-only; processing patterns can edit.',
     'Arrow keys/page keys and mouse wheel navigate lists.',
-    'Click a field to type. Ctrl+A selects all. Tab changes fields.',
+    'Tab cycles fields and buttons; Enter activates the highlighted button.',
+    'Click a field to type. Ctrl+A selects all.',
     'Backspace/Delete, Home/End and clipboard paste are supported.',
-    'Esc leaves a field; Esc again goes back. Enter selects/saves.',
+    'Esc leaves a field; Esc again goes back. Esc/Q quits on the main screen.',
+    'Ctrl+C, Ctrl+D or an OpenOS interrupt also exits cleanly.',
     'Scan is manual; no background AE polling. Keep chunks loaded.',
     'An interrupted save locks editing until Finish/Restore succeeds.'}
   draw=function()
@@ -239,6 +241,7 @@ function M.run(options)
       end,function(i,again) state.selected=i; if again then open() end end)
       ui.button(1,h-1,'Open',open,#state.results>0)
       ui.text(10,h-1,'Scan: '..(state.scanned or 'not yet'),0x99aabb)
+      ui.text(1,h-2,'Tab: controls/fields  Enter: activate  Esc/Q: quit',0x99aabb)
     elseif state.mode=='edit' then
       ui.text(1,2,Model.title(state.draft)..' @ '..state.record.name)
       local x=ui.button(1,3,'Inputs '..#state.draft.inputs,function() state.side='inputs'; state.entry=1 end)
@@ -323,23 +326,34 @@ function M.run(options)
     if e[1]=='scroll' then navigation(nil,-e[5]); return end
     if e[1]~='key_down' then return end
     local code=e[4]
+    if state.mode=='main' and (e[3]==113 or e[3]==81) then running=false; return end
     if code==keys.up then navigation(code,-1)
     elseif code==keys.down then navigation(code,1)
     elseif code==keys.pageUp then navigation(code,-math.max(1,ui.h-10))
     elseif code==keys.pageDown then navigation(code,math.max(1,ui.h-10))
-    elseif code==keys.enter then
+    elseif code==keys.enter or code==keys.numpadenter then
       if state.mode=='main' and #state.results>0 then open()
       elseif state.mode=='edit' and editable() then quantity()
       elseif state.mode=='picker' then pickDone()
       elseif state.mode=='choose' then local c=state.choice; c.callback(assert(c.items[c.selected],'No selection')) end
     elseif code==keys.delete and state.mode=='edit' and editable() then remove()
     elseif code==keys.escape then
-      if state.mode=='edit' then backEdit()
+      if state.mode=='main' then running=false
+      elseif state.mode=='edit' then backEdit()
       elseif state.mode=='picker' or state.mode=='amount' or state.mode=='preview' then mode('edit')
       elseif state.mode=='help' then mode('main')
       elseif state.mode=='confirm' then state.confirm.no()
-      elseif state.mode=='choose' then state.choice.back() end
+      elseif state.mode=='choose' then state.choice.back()
+      elseif state.mode=='error' then mode(state.returnMode or 'main') end
     end
+  end
+  local function interrupt(e)
+    if e[1]=='interrupted' then return true end
+    if e[1]~='key_down' then return false end
+    local ch,code=e[3],e[4]
+    if ch==3 or ch==4 then return true end
+    local ctrl=keyboard.isControlDown and keyboard.isControlDown()
+    return ctrl and (code==keys.c or code==keys.d) or false
   end
   local ok,err=xpcall(function()
     if options.demo or config then
@@ -351,7 +365,10 @@ function M.run(options)
       draw()
       if options.onDraw then options.onDraw(state,ui) end
       local e=ui.pull()
-      local handled,message=pcall(function() if not ui.dispatch(e) then key(e) end end)
+      local handled,message=pcall(function()
+        if interrupt(e) then running=false
+        elseif not ui.dispatch(e) then key(e) end
+      end)
       if not handled then errorBox(message) end
     end
   end,debug.traceback)

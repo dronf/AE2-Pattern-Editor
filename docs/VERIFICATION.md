@@ -1,4 +1,4 @@
-# Verification for v1.0.2
+# Verification for v1.0.3
 
 [Overview](../README.md) - [Development](DEVELOPMENT.md)
 
@@ -7,8 +7,9 @@
 This is a built OpenOS Lua application, not a Java mod. Automated tests execute
 the real Lua model, API adapter, transaction engine and UI under Lua 5.2 and 5.3.
 Actual installed JAR bytecode is inspected separately. **Live Minecraft/OC
-launches exposed a v1.0.0 startup crash and a v1.0.1 demo-title rendering
-crash. v1.0.2 addresses both, but has not yet been retested in-world.**
+launches exposed a v1.0.0 startup crash, a v1.0.1 demo-title rendering crash,
+and missing keyboard navigation in v1.0.2. v1.0.3 addresses these, but has
+not yet been retested in-world.**
 Simulation is not a claim of in-world validation.
 
 ## Automated checks
@@ -29,6 +30,9 @@ Simulation is not a claim of in-world validation.
   Render calls are checked against screen bounds, including a 51-character
   demo title at 50 columns without `unicode.wtrunc`. Top-row/numpad keys,
   Backspace/Delete, cursor movement, Ctrl+A, paste and UTF-8 text are exercised.
+- Keyboard-only demo startup: Tab selects Scan/Help/Quit, Enter activates the
+  selected control, Q/Escape quits, and Ctrl+C/Ctrl+D/OpenOS interruption exits
+  cleanly even while a field has focus.
 - Journal persistence checks and release/installer checks described by the tests.
 - Built entry-point smoke tests for `--help`, normal Setup startup and `--demo`
   under Lua 5.2 and 5.3 without the nonexistent `shell.getRunningProgram` API.
