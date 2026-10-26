@@ -1,7 +1,7 @@
 local C=require('ape.codec')
 local Model=require('ape.model')
 local Api=require('ape.api')
-local M={VERSION='1.0.4'}
+local M={VERSION='1.0.5'}
 function M.run(options)
   options=options or {}
   local component=options.component or require('component')
@@ -47,7 +47,7 @@ function M.run(options)
   local function filter()
     state.results={}
     for _,r in ipairs(state.records) do
-      if Model.match(r.pattern,state.search.text,state.match) then state.results[#state.results+1]=r end
+      if Model.matchIndex(r.index,state.search.text,state.match) then state.results[#state.results+1]=r end
     end
     state.selected=math.max(1,math.min(state.selected,#state.results))
   end
@@ -115,9 +115,13 @@ function M.run(options)
   end
   local function open()
     local r=assert(state.results[state.selected],'Select a pattern')
-    state.record=r; state.original=C.copy(r.pattern); state.draft=C.copy(r.pattern)
+    local raw=assert(api.read(r.endpoint),'Pattern disappeared since scanning; scan again')
+    local pattern=Model.pattern(raw)
+    state.listRecord=r
+    state.record={name=r.name,endpoint=r.endpoint,raw=raw,pattern=pattern}
+    state.original=C.copy(pattern); state.draft=C.copy(pattern)
     state.side='inputs'; state.entry=1; mode('edit')
-    status(r.pattern.crafting and 'Crafting-grid pattern: read-only. Use the AE Pattern Terminal to edit.' or 'Draft only. Preview, then Apply to save.')
+    status(pattern.crafting and 'Crafting-grid pattern: read-only. Use the AE Pattern Terminal to edit.' or 'Draft only. Preview, then Apply to save.')
   end
   local function selectedStack() return state.draft[state.side][state.entry] end
   local function editable() return state.draft and not state.draft.crafting end
@@ -145,7 +149,7 @@ function M.run(options)
   local function pick(replace)
     assert(editable(),'Read-only pattern')
     if replace then assert(selectedStack(),'Select an ingredient') end
-    if not catalog then progress('Reading stored items, fluids and cached pattern ingredients...'); catalog=api.catalog(state.records) end
+    if not catalog then progress('Reading stored items, fluids and visible pattern ingredients...'); catalog=api.catalog() end
     state.picker={search={text=''},selected=1,replace=replace}
     mode('picker'); ui.focus(state.picker.search)
   end
@@ -176,9 +180,10 @@ function M.run(options)
   local function apply()
     progress('Saving: moving, editing, verifying, returning pattern...')
     tx.apply(state.record,state.draft)
-    -- Update cache from a fresh read; a later external edit is still checked before the next Apply.
+    -- Refresh the small search index after the returned pattern has been verified.
     local raw=assert(api.read(state.record.endpoint),'Cannot read returned pattern')
-    state.record.raw=C.copy(raw); state.record.pattern=Model.pattern(raw)
+    state.listRecord.index=Model.index(raw)
+    state.record=nil; state.listRecord=nil; state.original=nil; state.draft=nil
     filter(); catalog=nil; mode('main'); status('Saved and verified at original interface/slot')
   end
   local function resume(action)
@@ -188,8 +193,12 @@ function M.run(options)
     mode('main'); status('Recovery complete. Press Scan to refresh patterns.')
   end
   local function backEdit()
-    if Model.signature(state.original)==Model.signature(state.draft) then mode('main'); return end
-    state.confirm={text='Discard the unsaved draft?',yes=function() mode('main') end,no=function() mode('edit') end}
+    local function discard()
+      state.record=nil; state.listRecord=nil; state.original=nil; state.draft=nil
+      mode('main')
+    end
+    if Model.signature(state.original)==Model.signature(state.draft) then discard(); return end
+    state.confirm={text='Discard the unsaved draft?',yes=discard,no=function() mode('edit') end}
     mode('confirm')
   end
   local function listRows(items,index,y,bottom,label,onChoose)
@@ -236,7 +245,7 @@ function M.run(options)
       end)
       ui.text(1,5,'Output / pattern                         Interface')
       listRows(state.results,state.selected,6,h-4,function(r)
-        local title=Model.title(r.pattern)..(r.pattern.crafting and ' [grid]' or '')
+        local title=r.index.title..(r.index.crafting and ' [grid]' or '')
         local n=math.floor(w*0.55)
         return unicode.sub(title,1,n-1)..string.rep(' ',math.max(1,n-unicode.len(title)))..r.name
       end,function(i,again) state.selected=i; if again then open() end end)

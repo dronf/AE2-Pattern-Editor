@@ -24,6 +24,7 @@ local function fixture()
   local store=memoryStore(); local tx=Tx.new(api,store)
   local records=api.scan(); local r
   for _,record in ipairs(records) do if record.endpoint.slot==0 and record.name=='Assembly Line' then r=record end end
+  r.raw=api.read(r.endpoint); r.pattern=Model.pattern(r.raw)
   return d,api,store,tx,r
 end
 -- Binary-safe persistence, hostile/corrupt files and deterministic ordering.
@@ -40,6 +41,17 @@ check(d.terminal.getInterfaces()().side=='UNKNOWN','Fixture must mirror OC Forge
 local interfaces=api.interfaces()
 check(interfaces[1].endpoint.side==2 and interfaces[2].endpoint.side==6 and interfaces[3].endpoint.side==6,
   'Normalize part and full-block interface sides')
+local indexed=api.scan()
+check(#indexed==4 and indexed[1].raw==nil and indexed[1].pattern==nil,
+  'Network scan must retain only a compact search index')
+check(Model.matchIndex(r.index,'QUANTIUM','inputs') and not Model.matchIndex(r.index,'QUANTIUM','outputs'),
+  'Compact index must search the same ingredient labels')
+check(not C.encode(r.index):find('renamed-item-nbt',1,true),'Search index must not retain item NBT')
+local largeRaw=C.copy(r.raw)
+largeRaw.tag=string.rep('pattern-nbt',500)
+largeRaw.inputs[1].tag=string.rep('ingredient-nbt',500)
+local compact=Model.index(largeRaw)
+check(#C.encode(compact)*10<#C.encode(largeRaw),'Index should be much smaller than a pattern with NBT')
 local p=r.pattern
 check(#api.scan()==4,'Includes source slots 0/8 and crafting-grid pattern, excludes editor')
 check(Model.match(p,'QUANTIUM','inputs'))

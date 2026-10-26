@@ -98,6 +98,31 @@ function M.title(p)
   for _,s in ipairs(p.outputs) do out[#out+1]=s.label end
   return table.concat(out,' + ')
 end
+-- The scan cache must not retain every encoded pattern and its binary NBT.
+-- Read one full pattern only when the user opens it for editing.
+function M.index(raw)
+  local p=M.pattern(raw)
+  local index={title=M.title(p),crafting=p.crafting,inputs={},outputs={}}
+  for _,side in ipairs({'inputs','outputs'}) do
+    for _,s in ipairs(p[side]) do
+      index[side][#index[side]+1]=s.label:lower()
+      index[side][#index[side]+1]=s.name:lower()
+    end
+  end
+  return index
+end
+function M.matchIndex(index,query,mode)
+  local q=(query or ''):lower()
+  if q=='' then return true end
+  for _,side in ipairs({'inputs','outputs'}) do
+    if mode=='both' or mode==side then
+      for _,term in ipairs(index[side]) do
+        if term:find(q,1,true) then return true end
+      end
+    end
+  end
+  return false
+end
 function M.match(p,query,mode)
   local q=(query or ''):lower()
   if q=='' then return true end

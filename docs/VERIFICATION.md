@@ -1,4 +1,4 @@
-# Verification for v1.0.4
+# Verification for v1.0.5
 
 [Overview](../README.md) - [Development](DEVELOPMENT.md)
 
@@ -9,8 +9,9 @@ the real Lua model, API adapter, transaction engine and UI under Lua 5.2 and 5.3
 Actual installed JAR bytecode is inspected separately. **Live Minecraft/OC
 launches exposed a v1.0.0 startup crash, a v1.0.1 demo-title rendering crash,
 and missing keyboard navigation in v1.0.2. The v1.0.3 in-game Setup then
-rejected a visible full-block interface. v1.0.4 addresses that error, but
-Setup and pattern editing have not yet been retested in-world.**
+rejected a visible full-block interface. v1.0.4 reached Scan in-world, where
+the 52-interface/355-pattern network ran out of OC memory. v1.0.5 reduces the
+retained scan data, but its result has not yet been retested in-world.**
 Simulation is not a claim of in-world validation.
 
 ## Automated checks
@@ -25,6 +26,9 @@ Simulation is not a claim of in-world validation.
 - Terminal ForgeDirection strings (`UNKNOWN` for full blocks and direction
   names for parts) normalize to numeric endpoints; Setup lists full-block
   candidates and saves the selected endpoint.
+- Scans retain only an NBT-free search index. Opening a result reads its full
+  current pattern; edits still verify the source fingerprint before movement.
+  The Add/Replace catalog reads visible pattern identities only on demand.
 - Stale-source rejection, occupied staging slot, partial edits, unexpected
   station mutation, wrong adapter binding and exact return-slot verification.
 - Exhaustive before/after interruption injection at journal saves, movements,

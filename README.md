@@ -11,13 +11,13 @@ the installer/application. It runs independently of Level Maintainer.
 
 ## Download and install
 
-[Release v1.0.4](https://github.com/dronf/AE2-Pattern-Editor/releases/tag/v1.0.4)
+[Release v1.0.5](https://github.com/dronf/AE2-Pattern-Editor/releases/tag/v1.0.5)
 contains the built, self-contained `pattern_editor.lua`, a verified installer,
 and an offline OC ZIP. On your OpenOS computer:
 
 ```sh
 cd /home
-wget -f https://raw.githubusercontent.com/dronf/AE2-Pattern-Editor/v1.0.4/installer.lua ape-install.lua
+wget -f https://raw.githubusercontent.com/dronf/AE2-Pattern-Editor/v1.0.5/installer.lua ape-install.lua
 ape-install
 pattern_editor --demo
 ```
@@ -31,7 +31,7 @@ Do not update the application during a pending pattern transaction.
 ## Features
 
 - Scan terminal-visible interfaces, including interface P2P sources; search
-  cached inputs, outputs or both by label or registry ID.
+  a compact, NBT-free index of inputs and outputs by label or registry ID.
 - Edit amounts, replace identities, add ingredients and remove ingredients on
   either side. The last input/output cannot be removed.
 - **x2 / /2** scale consumed inputs and outputs together. Division requires
@@ -53,9 +53,9 @@ API/bytecode compatibility checked with **OpenComputers 1.12.64-GTNH** and
 Interface Terminal each need an adjacent OC Adapter connected to the computer.
 The editing interface must be on the same AE network as the source patterns.
 
-**v1.0.4 fixes Setup rejecting terminal-visible full-block interfaces when
-OpenComputers reports their side as `UNKNOWN`. Live pattern editing remains
-to be verified.** Start with a
+**v1.0.5 reduces scan memory use after a real 52-interface/355-pattern scan
+ran out of OC memory. Large networks can still require more RAM; live
+pattern editing remains to be verified.** Start with a
 disposable processing pattern and follow the [in-game checklist](docs/VERIFICATION.md).
 
 Crafting-grid patterns are viewable but read-only. Normal item and untagged

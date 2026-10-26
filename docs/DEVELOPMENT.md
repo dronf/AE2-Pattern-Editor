@@ -6,7 +6,7 @@
 
 | File | Responsibility |
 | --- | --- |
-| src/ape/model.lua | Normalized identities, native layout, validation, search and draft transforms |
+| src/ape/model.lua | Normalized identities, compact search index, native layout, validation and draft transforms |
 | src/ape/api.lua | OC callbacks, terminal enumeration/transfers, local editing and item catalog |
 | src/ape/transaction.lua | Fingerprint checks, write-ahead mutations and physical-inventory recovery |
 | src/ape/store.lua | Checksummed persistence with temporary/backup generations |
@@ -49,6 +49,10 @@ python tools/verify_api.py --mods /path/to/instance/mods --output docs/api-verif
 - Terminal interface `side` may arrive as a ForgeDirection string (`UNKNOWN`
   for a full block, `NORTH` etc. for a part); normalize to the corresponding
   numeric side 0-6 before Setup filtering, comparisons or transfer calls.
+- The persistent Scan result contains only titles and searchable label/ID
+  strings. Read and normalize the selected full pattern when Open is pressed;
+  do not retain every pattern's binary NBT in the scan cache. Catalog identities
+  are read on demand when Add/Replace opens.
 - Local `getInterfacePattern`, setters, and ingredient indices are **one-based**.
 - Terminal `send(source,target)` moves a physical encoded pattern. It refuses
   an occupied destination. The source/target include location, side and slot.

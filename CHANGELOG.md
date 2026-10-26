@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.0.5 - 2026-10-26
+
+Reduce OC memory use during network scans. Cache only a small, NBT-free search
+index instead of full copies of every encoded pattern. Read the selected
+pattern when it is opened; preserve the fingerprint check before moving or
+editing it. Gather pattern ingredient identities on demand for Add/Replace.
+This addresses the `not enough memory` report after 355 patterns across 52
+interfaces, although large networks may still require more OC RAM.
+
 ## 1.0.4 - 2026-10-26
 
 Fix Setup incorrectly reporting that no full-block interface is visible when

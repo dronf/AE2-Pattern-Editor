@@ -44,10 +44,10 @@ function M.new(terminal,editor,station,yieldFn)
       if not station or not M.samePlace(place,station) then
         for k,raw in pairs(info.patterns or {}) do
           if type(k)=='number' and type(raw)=='table' then
-            local ok,p=pcall(Model.pattern,raw)
+            local ok,index=pcall(Model.index,raw)
             if ok then
               out[#out+1]={name=info.name or '(unnamed)',endpoint=endpoint(info,k),
-                raw=C.copy(raw),pattern=p}
+                index=index}
             else skipped=skipped+1 end
           end
         end
@@ -55,7 +55,7 @@ function M.new(terminal,editor,station,yieldFn)
       if progress then progress(n,#out) end
     end)
     table.sort(out,function(a,b)
-      local at,bt=Model.title(a.pattern),Model.title(b.pattern)
+      local at,bt=a.index.title,b.index.title
       if at~=bt then return at<bt end
       if a.name~=b.name then return a.name<b.name end
       return C.encode(a.endpoint)<C.encode(b.endpoint)
@@ -89,7 +89,7 @@ function M.new(terminal,editor,station,yieldFn)
     else ok=method(station.slot+1,index) end
     assert(ok==true, 'Pattern edit was rejected')
   end
-  function api.catalog(records)
+  function api.catalog()
     local out,seen={},{}
     local function add(s)
       local key=Model.identity(s)
@@ -98,9 +98,22 @@ function M.new(terminal,editor,station,yieldFn)
         out[#out+1]=v
       end
     end
-    for _,r in ipairs(records) do
-      for _,side in ipairs({'inputs','outputs'}) do for _,s in ipairs(r.pattern[side]) do add(s) end end
-    end
+    -- Read identities on demand instead of retaining every full pattern during Scan.
+    each(terminal.getInterfaces(),function(info)
+      local place=endpoint(info)
+      if not station or not M.samePlace(place,station) then
+        for _,raw in pairs(info.patterns or {}) do
+          if type(raw)=='table' then
+            local ok,p=pcall(Model.pattern,raw)
+            if ok then
+              for _,side in ipairs({'inputs','outputs'}) do
+                for _,s in ipairs(p[side]) do add(s) end
+              end
+            end
+          end
+        end
+      end
+    end)
     -- This is a deliberate user-triggered catalog refresh, never a polling loop.
     for _,s in pairs(editor.getItemsInNetwork()) do add(Model.stack(s)) end
     if editor.getFluidsInNetwork then
